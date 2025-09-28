@@ -97,86 +97,148 @@
         border-color: rgba(139, 92, 246, 0.55);
         box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
     }
-
-    .seat-stage {
-        width: 100%;
-        margin: 0 auto 18px;
-        padding: 12px 24px;
-        text-align: center;
-        border-radius: 12px;
-        background: rgba(139, 92, 246, 0.12);
-        border: 1px solid rgba(139, 92, 246, 0.28);
-        letter-spacing: 0.08em;
-        font-size: 0.85rem;
-        color: rgba(226, 232, 240, 0.75);
-        text-transform: uppercase;
+    .seat-layout {
+        display: grid;
+        gap: 32px;
     }
 
     .seat-grid {
+        position: relative;
         display: grid;
-        grid-template-columns: repeat(10, minmax(28px, 1fr));
-        gap: 10px;
-        justify-items: center;
-        padding: 18px;
-        border-radius: 22px;
+        grid-template-columns: repeat(var(--grid-columns, 14), minmax(42px, 1fr));
+        grid-auto-rows: 52px;
+        gap: 12px;
+        padding: 36px 28px 56px;
+        border-radius: 32px;
         border: 1px solid rgba(148, 163, 184, 0.16);
-        background: rgba(15, 23, 42, 0.6);
-        box-shadow: inset 0 12px 36px rgba(15, 23, 42, 0.45);
+        background: radial-gradient(circle at 20% -10%, rgba(139, 92, 246, 0.16) 0%, rgba(17, 24, 39, 0.94) 48%, rgba(5, 8, 18, 0.92) 100%);
+        box-shadow: 0 36px 64px rgba(5, 12, 28, 0.5);
+    }
+
+    .seat-grid::before {
+        content: "";
+        position: absolute;
+        inset: 22px 24px 38px;
+        border-radius: 26px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        pointer-events: none;
     }
 
     .seat {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.8rem;
+        appearance: none;
+        border: none;
         cursor: pointer;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-        border: 1px solid transparent;
+        width: 100%;
+        height: 100%;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 0.82rem;
+        letter-spacing: 0.02em;
+        color: rgba(241, 245, 249, 0.92);
+        background: linear-gradient(165deg, rgba(30, 41, 59, 0.95), rgba(12, 19, 33, 0.9));
+        box-shadow: 0 16px 32px rgba(5, 11, 24, 0.42);
+        transition: transform 0.24s ease, box-shadow 0.24s ease, background 0.24s ease;
+        position: relative;
+        display: grid;
+        place-items: center;
+    }
+
+    .seat::after {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        pointer-events: none;
     }
 
     .seat.available {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(59, 130, 246, 0.65));
-        color: white;
-        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.25);
+        background: linear-gradient(160deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.82));
+        box-shadow: 0 20px 36px rgba(16, 185, 129, 0.36);
     }
 
-    .seat.available:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 26px rgba(59, 130, 246, 0.35);
+    .seat.available:hover,
+    .seat.available:focus-visible {
+        transform: translateY(-3px);
+        box-shadow: 0 28px 48px rgba(16, 185, 129, 0.45);
+        outline: none;
     }
 
     .seat.selected {
-        background: linear-gradient(135deg, rgba(250, 204, 21, 0.95), rgba(251, 191, 36, 0.85));
-        color: #1f2937;
-        border-color: rgba(250, 204, 21, 0.4);
-        box-shadow: 0 14px 30px rgba(251, 191, 36, 0.35);
+        background: linear-gradient(160deg, rgba(124, 58, 237, 0.98), rgba(59, 130, 246, 0.9));
+        color: #0f172a;
+        box-shadow: 0 28px 54px rgba(99, 102, 241, 0.46);
     }
 
-    .seat.booked {
-        background: linear-gradient(135deg, rgba(248, 113, 113, 0.85), rgba(185, 28, 28, 0.85));
-        color: rgba(255, 255, 255, 0.9);
+    .seat.taken {
+        background: linear-gradient(160deg, rgba(51, 65, 85, 0.96), rgba(30, 41, 59, 0.9));
+        color: rgba(203, 213, 225, 0.58);
         cursor: not-allowed;
-        border-color: rgba(248, 113, 113, 0.32);
         box-shadow: none;
-        position: relative;
     }
 
-    .seat.booked::after {
-        content: "";
-        position: absolute;
-        inset: 6px;
-        border-radius: 8px;
-        border: 2px solid rgba(255, 255, 255, 0.25);
-        pointer-events: none;
+    .seat.taken::after {
+        border-color: rgba(148, 163, 184, 0.24);
+    }
+
+    .aisle {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+    }
+
+    .aisle--walkway {
+        background: linear-gradient(90deg, rgba(139, 92, 246, 0.18), rgba(59, 130, 246, 0.18));
+        border-color: rgba(148, 163, 184, 0.22);
+        min-height: 72px;
+        box-shadow: inset 0 16px 30px rgba(15, 23, 42, 0.45);
+    }
+
+    .legend-color.available {
+        background: linear-gradient(160deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.82));
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .legend-color.selected {
+        background: linear-gradient(160deg, rgba(124, 58, 237, 0.98), rgba(59, 130, 246, 0.9));
+        box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .legend-color.taken {
+        background: linear-gradient(160deg, rgba(51, 65, 85, 0.96), rgba(30, 41, 59, 0.9));
+    }
+
+    .screen-banner {
+        margin: 0;
+        padding: 18px 0;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: linear-gradient(90deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.92));
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        color: rgba(226, 232, 240, 0.78);
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.4);
+        text-align: center;
+        width: 100%;
+        position: relative;
+        z-index: 10;
     }
 
     .btn-fill {
         padding: 14px 24px;
         width: fit-content;
+    }
+
+    @media (max-width: 900px) {
+        .seat-grid {
+            grid-template-columns: repeat(var(--grid-columns, 14), minmax(36px, 1fr));
+            grid-auto-rows: 46px;
+            padding: 30px 22px 88px;
+        }
     }
 
     @media (max-width: 720px) {
@@ -185,8 +247,8 @@
         }
 
         .seat-grid {
-            grid-template-columns: repeat(10, minmax(26px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(var(--grid-columns, 14), minmax(32px, 1fr));
+            gap: 10px;
         }
     }
 </style>
@@ -217,9 +279,9 @@
             </div>
         </div>
         <div class="legend">
-            <span class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(59, 130, 246, 0.65));"></span>Available</span>
-            <span class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, rgba(250, 204, 21, 0.95), rgba(251, 191, 36, 0.85));"></span>Selected</span>
-            <span class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, rgba(248, 113, 113, 0.85), rgba(185, 28, 28, 0.85));"></span>Booked</span>
+            <span class="legend-item"><span class="legend-color available"></span>Available</span>
+            <span class="legend-item"><span class="legend-color selected"></span>Selected</span>
+            <span class="legend-item"><span class="legend-color taken"></span>Taken</span>
         </div>
     </article>
 
@@ -232,25 +294,34 @@
 
             <div>
                 <label>Pilih kursi yang anda inginkan</label>
-                <div class="seat-stage">Layar Film di sini</div>
-                <div class="seat-grid">
-                    {% for row in ['A', 'B', 'C', 'D', 'E'] %}
-                        {% for col in range(1, 11) %}
-                            {% set seat_id = row ~ col %}
-                            {% set booking = booked_seats.get(seat_id) %}
-                            <div class="seat {% if booking %}booked{% else %}available{% endif %}"
-                                 data-seat="{{ seat_id }}"
-                                 {% if booking %}
-                                    title="Booked by {{ booking.user }}"
-                                    data-user="{{ booking.user }}"
-                                    onclick='showBooked({{ seat_id|tojson }}, {{ booking.user|tojson }})'
-                                 {% else %}
-                                    onclick='selectSeat({{ seat_id|tojson }})'
-                                 {% endif %}>
-                                {{ seat_id }}
-                            </div>
+                {% set total_columns = seat_map[0] | length %}
+                <div class="seat-layout">
+                    <div class="seat-grid" style="--grid-columns: {{ total_columns }}">
+                        {% for row in seat_map %}
+                            {% set occupied = row | reject('equalto', None) | list %}
+                            {% set is_walkway_row = occupied|length == 0 %}
+                            {% for seat_id in row %}
+                                {% if seat_id %}
+                                    {% set booking = booked_seats.get(seat_id) %}
+                                    <button type="button"
+                                            class="seat {% if booking %}taken{% else %}available{% endif %}"
+                                            data-seat="{{ seat_id }}"
+                                            {% if booking %}
+                                                title="Seat {{ seat_id }} · {{ booking.user }}"
+                                                data-user="{{ booking.user }}"
+                                                onclick='showTaken({{ seat_id|tojson }}, {{ booking.user|tojson }})'
+                                            {% else %}
+                                                onclick='selectSeat({{ seat_id|tojson }})'
+                                            {% endif %}>
+                                        {{ seat_id }}
+                                    </button>
+                                {% else %}
+                                    <div class="aisle{% if is_walkway_row %} aisle--walkway{% endif %}" aria-hidden="true"></div>
+                                {% endif %}
+                            {% endfor %}
                         {% endfor %}
-                    {% endfor %}
+                    </div>
+                    <div class="screen-banner">SCREEN</div>
                 </div>
                 <input type="hidden" id="seat" name="seat" required>
             </div>
@@ -266,25 +337,29 @@
     let selectedSeat = null;
 
     function selectSeat(seatId) {
+        const target = document.querySelector(`[data-seat="${seatId}"]`);
+        if (!target || target.classList.contains('taken')) {
+            return;
+        }
+
         if (selectedSeat && selectedSeat !== seatId) {
             const previous = document.querySelector(`[data-seat="${selectedSeat}"]`);
             if (previous) {
                 previous.classList.remove('selected');
-                previous.classList.add('available');
+                if (!previous.classList.contains('taken')) {
+                    previous.classList.add('available');
+                }
             }
         }
 
         selectedSeat = seatId;
-        const target = document.querySelector(`[data-seat="${seatId}"]`);
-        if (target) {
-            target.classList.remove('available');
-            target.classList.add('selected');
-        }
+        target.classList.remove('available');
+        target.classList.add('selected');
         document.getElementById('seat').value = seatId;
     }
 
-    function showBooked(seatId, userName) {
-        alert(`Seat ${seatId} is already booked by ${userName}.`);
+    function showTaken(seatId, userName) {
+        alert(`Seat ${seatId} is already taken by ${userName}.`);
     }
 </script>
 {% endblock %}

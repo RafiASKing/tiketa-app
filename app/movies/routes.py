@@ -3,6 +3,7 @@ from datetime import timedelta
 from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
 from app.models import db, Movie, Showtime, Booking
+from app.layouts import SEAT_MAP
 
 @bp.route('/')
 def index():
@@ -67,5 +68,6 @@ def book_ticket(showtime_id):
         'movies/book.html',
         showtime=showtime,
         booked_seats=booked_seats,
+        seat_map=SEAT_MAP,
         timedelta=timedelta
     )
