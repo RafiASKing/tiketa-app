@@ -7,7 +7,7 @@ This document captures the current architecture, data model, and user experience
 - **Framework**: Flask 3 with the application factory pattern and blueprint modularity
 - **Data Layer**: SQLAlchemy ORM targeting PostgreSQL in production with SQLite fallback for local runs
 - **Runtime Entry**: `run.py` bootstraps the factory-created app and honours `FLASK_DEBUG` / `PORT`
-- **Domain Scope**: MegaCinema Bekasi with 21 permanent studios, each dedicated to a single film
+- **Domain Scope**: The Time Gallery.   Bekasi with 21 permanent studios, each dedicated to a single film
 - **UI Stack**: Server-rendered Jinja templates styled with modern CSS, gradients, and responsive layout primitives
 
 ## High-Level Topology
