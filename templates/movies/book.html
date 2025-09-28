@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Ticket - Tiketa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 8px;
+        }
+        .booking-form {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .movie-info {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            margin: 20px 0;
+        }
+        .seat {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #3498db;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .seat.available {
+            background-color: #3498db;
+            color: white;
+        }
+        .seat.booked {
+            background-color: #e74c3c;
+            color: white;
+            cursor: not-allowed;
+        }
+        .seat.selected {
+            background-color: #f39c12;
+            color: white;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+        }
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎬 Tiketa</h1>
+        <p>Your favorite movie ticket booking app</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="booking-form">
+        <a href="{{ url_for('movies.movie_detail', movie_id=showtime.movie.id) }}" class="btn btn-secondary">← Back</a>
+        
+        <div class="movie-info">
+            <h2>{{ showtime.movie.title }}</h2>
+            <p><strong>Showtime:</strong> {{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}</p>
+        </div>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="user">Your Name:</label>
+                <input type="text" id="user" name="user" required>
+            </div>
+
+            <div class="form-group">
+                <label>Select Seat:</label>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        Available
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        Booked
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f39c12;"></div>
+                        Selected
+                    </div>
+                </div>
+                <div class="seat-grid">
+                    {% for row in ['A', 'B', 'C', 'D', 'E'] %}
+                        {% for col in range(1, 11) %}
+                            {% set seat_id = row ~ col %}
+                            <div class="seat {% if seat_id in booked_seats %}booked{% else %}available{% endif %}" 
+                                 data-seat="{{ seat_id }}" 
+                                 onclick="{% if seat_id not in booked_seats %}selectSeat('{{ seat_id }}'){% endif %}">
+                                {{ seat_id }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                <input type="hidden" id="seat" name="seat" required>
+            </div>
+
+            <button type="submit" class="btn">Book Ticket</button>
+        </form>
+    </div>
+
+    <script>
+        let selectedSeat = null;
+
+        function selectSeat(seatId) {
+            // Remove previous selection
+            if (selectedSeat) {
+                document.querySelector(`[data-seat="${selectedSeat}"]`).classList.remove('selected');
+                document.querySelector(`[data-seat="${selectedSeat}"]`).classList.add('available');
+            }
+            
+            // Select new seat
+            selectedSeat = seatId;
+            document.querySelector(`[data-seat="${seatId}"]`).classList.remove('available');
+            document.querySelector(`[data-seat="${seatId}"]`).classList.add('selected');
+            document.getElementById('seat').value = seatId;
+        }
+    </script>
+</body>
+</html>
