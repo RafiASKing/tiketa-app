@@ -27,6 +27,24 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 30px;
         }
+        .movie-hero {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .movie-poster-lg {
+            width: 220px;
+            max-width: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+            aspect-ratio: 2 / 3;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .movie-info {
+            flex: 1;
+            min-width: 240px;
+        }
         .movie-title {
             font-size: 2.5em;
             font-weight: bold;
@@ -38,6 +56,36 @@
             line-height: 1.6;
             font-size: 1.1em;
             margin-bottom: 30px;
+        }
+        .movie-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        .badge {
+            background-color: #1abc9c;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .genre-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .genre-tag {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.85em;
         }
         .showtimes {
             background: white;
@@ -84,12 +132,20 @@
         .back-link {
             margin-bottom: 20px;
         }
+        @media (max-width: 600px) {
+            .movie-title {
+                font-size: 2em;
+            }
+            .movie-poster-lg {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🎬 Tiketa</h1>
-        <p>Web Booking tiket MegaCinema Bekasi</p>
+        <h1>🎟️Tiketa</h1>
+        <p>Web Booking tiket MegaCinema Bekasi ✋😮🤚</p>
     </div>
 
     <div class="back-link">
@@ -97,15 +153,40 @@
     </div>
 
     <div class="movie-detail">
-        <div class="movie-title">{{ movie.title }}</div>
-        <div class="movie-description">{{ movie.description }}</div>
+        <div class="movie-hero">
+            {% if movie.poster_path %}
+                <img src="{{ movie.poster_path }}" alt="Poster of {{ movie.title }}" class="movie-poster-lg">
+            {% endif %}
+            <div class="movie-info">
+                <div class="movie-title">{{ movie.title }}</div>
+                <div class="movie-meta">
+                    <span class="badge">Studio {{ '%02d'|format(movie.studio_number) }}</span>
+                    {% if movie.release_date %}
+                        <span>Release: {{ movie.release_date.strftime('%B %d, %Y') }}</span>
+                    {% endif %}
+                    {% set daily_slots = 6 if movie.studio_number % 2 == 0 else 5 %}
+                    <span>Daily Shows: {{ daily_slots }} ({{ 'Even' if movie.studio_number % 2 == 0 else 'Odd' }} studio)</span>
+                </div>
+                <div class="movie-description">{{ movie.description }}</div>
+                {% if movie.genres %}
+                    <div class="genre-tags">
+                        {% for genre in movie.genres %}
+                            <span class="genre-tag">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <div class="showtimes">
         <h2>Available Showtimes</h2>
         {% for showtime in showtimes %}
             <div class="showtime-item">
-                <div class="showtime-time">{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
+                <div>
+                    <div class="showtime-time">{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
+                    <div>Studio {{ '%02d'|format(movie.studio_number) }} • Duration: 2h • Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}</div>
+                </div>
                 <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn">Book Tickets</a>
             </div>
         {% endfor %}

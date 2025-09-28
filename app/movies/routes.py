@@ -1,19 +1,21 @@
+from datetime import timedelta
+
 from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
 from app.models import db, Movie, Showtime, Booking
 
 @bp.route('/')
 def index():
-    """Main route to list all movies"""
-    movies = Movie.query.all()
+    """Main route to list all movies, ordered by studio."""
+    movies = Movie.query.order_by(Movie.studio_number).all()
     return render_template('movies/index.html', movies=movies)
 
 @bp.route('/movie/<int:movie_id>')
 def movie_detail(movie_id):
     """Show movie details and showtimes"""
     movie = Movie.query.get_or_404(movie_id)
-    showtimes = Showtime.query.filter_by(movie_id=movie_id).all()
-    return render_template('movies/detail.html', movie=movie, showtimes=showtimes)
+    showtimes = Showtime.query.filter_by(movie_id=movie_id).order_by(Showtime.time).all()
+    return render_template('movies/detail.html', movie=movie, showtimes=showtimes, timedelta=timedelta)
 
 @bp.route('/book/<int:showtime_id>', methods=['GET', 'POST'])
 def book_ticket(showtime_id):
@@ -46,7 +48,24 @@ def book_ticket(showtime_id):
         else:
             flash('Please provide both user name and seat number.', 'error')
     
-    # Get already booked seats
-    booked_seats = [b.seat for b in Booking.query.filter_by(showtime_id=showtime_id).all()]
-    
-    return render_template('movies/book.html', showtime=showtime, booked_seats=booked_seats)
+    # Gather booking details for the seating chart
+    bookings = (
+        Booking.query
+        .filter_by(showtime_id=showtime_id)
+        .order_by(Booking.seat)
+        .all()
+    )
+    booked_seats = {
+        booking.seat: {
+            "user": booking.user,
+            "booked_at": booking.created_at
+        }
+        for booking in bookings
+    }
+
+    return render_template(
+        'movies/book.html',
+        showtime=showtime,
+        booked_seats=booked_seats,
+        timedelta=timedelta
+    )

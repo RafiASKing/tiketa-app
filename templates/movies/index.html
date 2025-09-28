@@ -35,16 +35,59 @@
         .movie-card:hover {
             transform: translateY(-2px);
         }
+        .poster-wrapper {
+            overflow: hidden;
+            border-radius: 6px;
+            margin: -20px -20px 15px;
+            background-color: #dfe6e9;
+        }
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            display: block;
+        }
         .movie-title {
             font-size: 1.5em;
             font-weight: bold;
             margin-bottom: 10px;
             color: #2c3e50;
         }
+        .movie-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            color: #34495e;
+            font-size: 0.95em;
+        }
+        .badge {
+            background-color: #1abc9c;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
         .movie-description {
             color: #666;
             line-height: 1.4;
             margin-bottom: 15px;
+        }
+        .genre-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+        .genre-tag {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.8em;
         }
         .btn {
             background-color: #3498db;
@@ -79,8 +122,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>🎬 Tiketa</h1>
-        <p>Web Booking tiket MegaCinema Bekasi</p>
+        <h1>🎟️Tiketa</h1>
+        <p>Web Booking tiket MegaCinema Bekasi ✋😮🤚</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -96,8 +139,29 @@
     <div class="movies-grid">
         {% for movie in movies %}
             <div class="movie-card">
+                {% if movie.poster_path %}
+                    <div class="poster-wrapper">
+                        <img src="{{ movie.poster_path }}" alt="Poster of {{ movie.title }}" class="movie-poster">
+                    </div>
+                {% endif %}
                 <div class="movie-title">{{ movie.title }}</div>
+                <div class="movie-meta">
+                    <span class="badge">Studio {{ '%02d'|format(movie.studio_number) }}</span>
+                    {% if movie.release_date %}
+                        <span>Release: {{ movie.release_date.strftime('%b %d, %Y') }}</span>
+                    {% endif %}
+                    {% if movie.genres %}
+                        <span>{{ movie.genres|length }} Genres</span>
+                    {% endif %}
+                </div>
                 <div class="movie-description">{{ movie.description }}</div>
+                {% if movie.genres %}
+                    <div class="genre-tags">
+                        {% for genre in movie.genres %}
+                            <span class="genre-tag">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 <a href="{{ url_for('movies.movie_detail', movie_id=movie.id) }}" class="btn">View Showtimes</a>
             </div>
         {% endfor %}

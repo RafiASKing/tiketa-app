@@ -34,24 +34,32 @@ def create_app(config=None):
         # Initialize with sample data if no movies exist
         from app.models import Movie, Showtime
         from app.sample_data.movies import SAMPLE_MOVIES
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, time
         
         if Movie.query.count() == 0:
-            # Add sample movies
+            def first_show_datetime() -> datetime:
+                """Return the next 06:00 time in the future."""
+                now = datetime.now()
+                candidate = datetime.combine(now.date(), time(hour=6))
+                if candidate <= now:
+                    candidate = datetime.combine(now.date() + timedelta(days=1), time(hour=6))
+                return candidate
+
+            def generate_showtimes(studio_number: int) -> list[datetime]:
+                start = first_show_datetime()
+                slots = 6 if studio_number % 2 == 0 else 5
+                interval_hours = 3 if studio_number % 2 == 0 else 4
+                return [start + timedelta(hours=interval_hours * i) for i in range(slots)]
+
+            # Add sample movies with studio-specific schedules
             for movie_data in SAMPLE_MOVIES:
                 movie = Movie(**movie_data)
                 db.session.add(movie)
-                db.session.flush()  # Get the ID
-                
-                # Add sample showtimes
-                base_time = datetime.now().replace(hour=18, minute=0, second=0, microsecond=0)
-                for i in range(3):  # 3 showtimes per movie
-                    showtime = Showtime(
-                        movie_id=movie.id,
-                        time=base_time + timedelta(days=i)
-                    )
-                    db.session.add(showtime)
-            
+                db.session.flush()  # Make sure movie.id is available
+
+                for start_time in generate_showtimes(movie.studio_number):
+                    db.session.add(Showtime(movie_id=movie.id, time=start_time))
+
             db.session.commit()
     
     return app

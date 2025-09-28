@@ -9,14 +9,21 @@ class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    studio_number = db.Column(db.Integer, unique=True, nullable=False)
     poster_path = db.Column(db.String(255), nullable=True)
     backdrop_path = db.Column(db.String(255), nullable=True)
     release_date = db.Column(db.Date, nullable=True)
     genre_ids = db.Column(db.JSON, nullable=True)
+    genres = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship with showtimes
-    showtimes = db.relationship('Showtime', backref='movie', lazy=True)
+    showtimes = db.relationship(
+        'Showtime',
+        backref='movie',
+        lazy=True,
+        order_by='Showtime.time'
+    )
     
     def __repr__(self):
         return f'<Movie {self.title}>'
@@ -37,6 +44,10 @@ class Showtime(db.Model):
 
 class Booking(db.Model):
     __tablename__ = 'bookings'
+
+    __table_args__ = (
+        db.UniqueConstraint('showtime_id', 'seat', name='uq_booking_showtime_seat'),
+    )
     
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(255), nullable=False)
