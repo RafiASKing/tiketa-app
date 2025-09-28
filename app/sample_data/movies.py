@@ -56,7 +56,7 @@ SAMPLE_MOVIES = [
     {
         "studio_number": 6,
         "title": "Mobile Suit Gundam SEED Freedom",
-        "description": "n C.E.75, the fighting still continues. There are independence movements, and aggression by Blue Cosmos... In order to calm the situation, a global peace monitoring agency called COMPASS is established, with Lacus as its first president. As members of COMPASS, Kira and his comrades intervene into various regional battles. Then a newly established nation called Foundation proposes a joint operation against a Blue Cosmos stronghold.",
+        "description": "In C.E.75, the fighting still continues. There are independence movements, and aggression by Blue Cosmos... In order to calm the situation, a global peace monitoring agency called COMPASS is established, with Lacus as its first president. As members of COMPASS, Kira and his comrades intervene into various regional battles. Then a newly established nation called Foundation proposes a joint operation against a Blue Cosmos stronghold.",
         "poster_path": "https://image.tmdb.org/t/p/original/1EBnttleJaKnWWyyEqfiSn76ZjT.jpg",
         "backdrop_path": "/backdrops/gundam_seed_freedom.jpg",
         "release_date": date(2024, 1, 26),
