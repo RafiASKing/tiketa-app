@@ -33,26 +33,12 @@ def create_app(config=None):
         
         # Initialize with sample data if no movies exist
         from app.models import Movie, Showtime
+        from app.sample_data.movies import SAMPLE_MOVIES
         from datetime import datetime, timedelta
         
         if Movie.query.count() == 0:
             # Add sample movies
-            movies_data = [
-                {
-                    'title': 'The Dark Knight',
-                    'description': 'Batman fights the Joker in this epic superhero thriller.'
-                },
-                {
-                    'title': 'Inception',
-                    'description': 'A thief enters people\'s dreams to steal secrets in this mind-bending sci-fi film.'
-                },
-                {
-                    'title': 'Pulp Fiction',
-                    'description': 'Multiple storylines interweave in this iconic crime drama.'
-                }
-            ]
-            
-            for movie_data in movies_data:
+            for movie_data in SAMPLE_MOVIES:
                 movie = Movie(**movie_data)
                 db.session.add(movie)
                 db.session.flush()  # Get the ID
