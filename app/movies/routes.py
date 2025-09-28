@@ -44,7 +44,7 @@ def book_ticket(showtime_id):
                 db.session.add(booking)
                 db.session.commit()
                 flash(f'Successfully booked seat {seat} for {user}!', 'success')
-                return redirect(url_for('movies.index'))
+                return redirect(url_for('movies.book_ticket', showtime_id=showtime_id))
         else:
             flash('Please provide both user name and seat number.', 'error')
     

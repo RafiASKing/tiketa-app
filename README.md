@@ -5,7 +5,7 @@ A modular web application for booking movie tickets built with Python, Flask, Po
 ## Features
 
 - **Movie Listings**: Browse available movies with descriptions
-- **Showtime Management**: View showtimes for each movie
+- **Showtime Management**: Lihat Jadwal for each movie
 - **Ticket Booking**: Book tickets with seat selection
 - **Database Integration**: PostgreSQL support with SQLite fallback
 - **Modular Architecture**: Built using Flask's Application Factory Pattern and Blueprints

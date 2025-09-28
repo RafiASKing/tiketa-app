@@ -1,199 +1,157 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ movie.title }} - Tiketa</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background-color: #2c3e50;
-            color: white;
-            border-radius: 8px;
-        }
-        .movie-detail {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        .movie-hero {
-            display: flex;
-            gap: 24px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .movie-poster-lg {
-            width: 220px;
-            max-width: 100%;
-            border-radius: 8px;
-            object-fit: cover;
-            aspect-ratio: 2 / 3;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        .movie-info {
-            flex: 1;
-            min-width: 240px;
-        }
-        .movie-title {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #2c3e50;
-        }
-        .movie-description {
-            color: #666;
-            line-height: 1.6;
-            font-size: 1.1em;
-            margin-bottom: 30px;
-        }
-        .movie-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 20px;
-            color: #34495e;
-        }
-        .badge {
-            background-color: #1abc9c;
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 999px;
-            font-size: 0.85em;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .genre-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        .genre-tag {
-            background-color: #ecf0f1;
-            color: #2c3e50;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 0.85em;
-        }
-        .showtimes {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .showtimes h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
+{% extends 'base.html' %}
+
+{% block title %}{{ movie.title }} · Tiketa{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 32px;
+        margin-bottom: 32px;
+    }
+
+    .poster-frame {
+        position: relative;
+    }
+
+    .poster-frame::after {
+        content: "";
+        position: absolute;
+        inset: 12px;
+        border-radius: 22px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        pointer-events: none;
+    }
+
+    .movie-poster-lg {
+        width: 100%;
+        border-radius: 24px;
+        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.55);
+        object-fit: cover;
+        aspect-ratio: 2 / 3;
+    }
+
+    .movie-headline {
+        display: grid;
+        gap: 18px;
+    }
+
+    .movie-title {
+        font-size: clamp(2rem, 4vw, 2.8rem);
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .movie-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        color: rgba(226, 232, 240, 0.75);
+    }
+
+    .movie-description {
+        color: var(--text-secondary);
+        line-height: 1.7;
+        font-size: 1.05rem;
+    }
+
+    .genre-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .showtimes-card {
+        display: grid;
+        gap: 18px;
+    }
+
+    .showtime-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        background: rgba(15, 23, 42, 0.62);
+    }
+
+    .showtime-meta {
+        color: rgba(226, 232, 240, 0.7);
+        font-size: 0.95rem;
+    }
+
+    .back-link {
+        margin-bottom: 22px;
+    }
+
+    @media (max-width: 640px) {
         .showtime-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            background-color: #fafafa;
+            flex-direction: column;
+            align-items: flex-start;
         }
-        .showtime-time {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .btn {
-            background-color: #3498db;
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 4px;
-            display: inline-block;
-            transition: background-color 0.2s;
-        }
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        .btn-secondary {
-            background-color: #95a5a6;
-        }
-        .btn-secondary:hover {
-            background-color: #7f8c8d;
-        }
-        .back-link {
-            margin-bottom: 20px;
-        }
-        @media (max-width: 600px) {
-            .movie-title {
-                font-size: 2em;
-            }
-            .movie-poster-lg {
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🎟️Tiketa</h1>
-        <p>Web Booking tiket MegaCinema Bekasi ✋😮🤚</p>
-    </div>
 
-    <div class="back-link">
-        <a href="{{ url_for('movies.index') }}" class="btn btn-secondary">← Back to Movies</a>
-    </div>
+        .showtime-item .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
 
-    <div class="movie-detail">
-        <div class="movie-hero">
-            {% if movie.poster_path %}
-                <img src="{{ movie.poster_path }}" alt="Poster of {{ movie.title }}" class="movie-poster-lg">
-            {% endif %}
-            <div class="movie-info">
-                <div class="movie-title">{{ movie.title }}</div>
-                <div class="movie-meta">
-                    <span class="badge">Studio {{ '%02d'|format(movie.studio_number) }}</span>
-                    {% if movie.release_date %}
-                        <span>Release: {{ movie.release_date.strftime('%B %d, %Y') }}</span>
-                    {% endif %}
-                    {% set daily_slots = 6 if movie.studio_number % 2 == 0 else 5 %}
-                    <span>Daily Shows: {{ daily_slots }} ({{ 'Even' if movie.studio_number % 2 == 0 else 'Odd' }} studio)</span>
-                </div>
-                <div class="movie-description">{{ movie.description }}</div>
-                {% if movie.genres %}
-                    <div class="genre-tags">
-                        {% for genre in movie.genres %}
-                            <span class="genre-tag">{{ genre }}</span>
-                        {% endfor %}
-                    </div>
+{% block content %}
+<div class="back-link">
+    <a href="{{ url_for('movies.index') }}" class="btn btn-ghost">← Kembali ke Halaman Awal</a>
+</div>
+
+<section class="card card-padding detail-grid">
+    {% if movie.poster_path %}
+        <div class="poster-frame">
+            <img src="{{ movie.poster_path }}" alt="Poster of {{ movie.title }}" class="movie-poster-lg">
+        </div>
+    {% endif %}
+    <div class="movie-headline">
+        <div>
+            <h2 class="movie-title">{{ movie.title }}</h2>
+            <div class="movie-meta">
+                <span class="badge">Studio {{ '%02d'|format(movie.studio_number) }}</span>
+                {% if movie.release_date %}
+                    <span>Released {{ movie.release_date.strftime('%B %d, %Y') }}</span>
                 {% endif %}
+                {% set daily_slots = 6 if movie.studio_number % 2 == 0 else 5 %}
+                <span>{{ daily_slots }} shows daily ({{ 'Even' if movie.studio_number % 2 == 0 else 'Odd' }} studio)</span>
             </div>
         </div>
-    </div>
-
-    <div class="showtimes">
-        <h2>Available Showtimes</h2>
-        {% for showtime in showtimes %}
-            <div class="showtime-item">
-                <div>
-                    <div class="showtime-time">{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
-                    <div>Studio {{ '%02d'|format(movie.studio_number) }} • Duration: 2h • Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}</div>
-                </div>
-                <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn">Book Tickets</a>
+        <p class="movie-description">{{ movie.description }}</p>
+        {% if movie.genres %}
+            <div class="genre-tags">
+                {% for genre in movie.genres %}
+                    <span class="tag">{{ genre }}</span>
+                {% endfor %}
             </div>
-        {% endfor %}
-        
-        {% if not showtimes %}
-            <p>No showtimes available for this movie.</p>
         {% endif %}
     </div>
-</body>
-</html>
+</section>
+
+<section class="card card-padding showtimes-card">
+    <div class="section-title">Available Showtimes</div>
+    {% for showtime in showtimes %}
+        <div class="showtime-item">
+            <div>
+                <div style="font-weight: 600; font-size: 1.05rem;">
+                    {{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}
+                </div>
+                <div class="showtime-meta">
+                    Studio {{ '%02d'|format(movie.studio_number) }} · Duration 2h · Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}
+                </div>
+            </div>
+            <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn btn-primary">Booking sekarang</a>
+        </div>
+    {% endfor %}
+
+    {% if not showtimes %}
+        <p style="color: var(--text-secondary);">No showtimes available for this movie.</p>
+    {% endif %}
+</section>
+{% endblock %}
