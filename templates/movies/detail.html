@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ movie.title }} - Tiketa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 8px;
+        }
+        .movie-detail {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .movie-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .movie-description {
+            color: #666;
+            line-height: 1.6;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        .showtimes {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .showtimes h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .showtime-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        .showtime-time {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎬 Tiketa</h1>
+        <p>Your favorite movie ticket booking app</p>
+    </div>
+
+    <div class="back-link">
+        <a href="{{ url_for('movies.index') }}" class="btn btn-secondary">← Back to Movies</a>
+    </div>
+
+    <div class="movie-detail">
+        <div class="movie-title">{{ movie.title }}</div>
+        <div class="movie-description">{{ movie.description }}</div>
+    </div>
+
+    <div class="showtimes">
+        <h2>Available Showtimes</h2>
+        {% for showtime in showtimes %}
+            <div class="showtime-item">
+                <div class="showtime-time">{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
+                <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn">Book Tickets</a>
+            </div>
+        {% endfor %}
+        
+        {% if not showtimes %}
+            <p>No showtimes available for this movie.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
