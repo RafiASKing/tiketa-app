@@ -7,27 +7,42 @@
     .movies-hero {
         margin-bottom: 32px;
         display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        gap: 16px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
     }
 
     .movies-hero h2 {
         margin: 0;
-        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
         font-weight: 600;
+        letter-spacing: 0.01em;
     }
 
-    .movies-hero p {
-        margin: 8px 0 0;
-        color: var(--text-secondary);
+    .hero-description {
+        margin: 0;
+        max-width: 640px;
         font-size: 1rem;
+        font-weight: 400;
+        color: rgba(226, 232, 240, 0.78);
+        line-height: 1.6;
+    }
+
+    .hero-note {
+        margin: 0;
+        max-width: 720px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: rgba(226, 232, 240, 0.64);
+        line-height: 1.6;
     }
 
     .movies-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 28px;
+        align-items: stretch;
     }
 
     .movie-card {
@@ -35,6 +50,7 @@
         display: flex;
         flex-direction: column;
         min-height: 100%;
+        height: 100%;
         overflow: hidden;
     }
 
@@ -65,10 +81,18 @@
 
     .movie-body {
         position: relative;
-        display: grid;
-        gap: 14px;
-        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        flex: 1 1 auto;
         background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%);
+    }
+
+    .movie-details {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        flex: 1 1 auto;
     }
 
     .movie-title {
@@ -78,10 +102,62 @@
 
     .movie-meta {
         display: flex;
+        align-items: center;
         flex-wrap: wrap;
-        gap: 10px;
-        color: rgba(226, 232, 240, 0.8);
-        font-size: 0.9rem;
+        gap: 16px;
+    }
+
+    .studio-chip {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        border: 1px solid rgba(139, 92, 246, 0.35);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 10px;
+        gap: 6px;
+        color: var(--text);
+        line-height: 1.1;
+    }
+
+    .studio-chip__label {
+        font-size: 0.65rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .studio-chip__number {
+        font-size: 1.6rem;
+        font-weight: 600;
+        line-height: 1;
+    }
+
+    .studio-chip__release {
+        font-size: 0.7rem;
+        color: rgba(226, 232, 240, 0.78);
+    }
+
+    .meta-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: rgba(226, 232, 240, 0.82);
+        font-size: 0.92rem;
+    }
+
+    .meta-stack span {
+        display: block;
+    }
+
+    .movie-description {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 0;
     }
 
     .genre-tags {
@@ -98,13 +174,12 @@
 
     .movie-cta {
         width: fit-content;
-        margin-top: 8px;
+        margin-top: auto;
     }
 
     @media (max-width: 600px) {
         .movies-hero {
-            flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
         }
     }
 </style>
@@ -112,11 +187,9 @@
 
 {% block content %}
 <section class="movies-hero">
-    <div>
-        <h2>Sekarang Tayang</h2>
-        <p>Bioskop ini memiliki konsep 1 Studio 1 Film.</p>
-    </div>
-    <a href="{{ url_for('movies.index') }}" class="btn btn-secondary">Refresh List Film</a>
+    <h2>Sekarang Tayang</h2>
+    <p class="hero-description">Di sini, waktu tidak berjalan maju, ia meng abadi. Setiap studio adalah sebuah kuil persembahan untuk satu mahakarya cinema. Dibuka sejak hari pertama filmnya terlahir ke dunia, pintunya tak pernah tertutup, menjaga gema cerita dan bisikan karakter selamanya.</p>
+    <p class="hero-note">~R</p>
 </section>
 
 <div class="movies-grid">
@@ -126,18 +199,25 @@
                 <img src="{{ movie.poster_path }}" alt="Poster of {{ movie.title }}" class="movie-poster">
             {% endif %}
             <div class="card-padding movie-body">
-                <div>
+                <div class="movie-details">
                     <div class="movie-title">{{ movie.title }}</div>
+                    {% set daily_slots = 6 if movie.studio_number % 2 == 0 else 5 %}
                     <div class="movie-meta">
-                        <span class="badge">Studio {{ '%02d'|format(movie.studio_number) }}</span>
-                        {% if movie.release_date %}
-                            <span>Release · {{ movie.release_date.strftime('%b %d, %Y') }}</span>
-                        {% endif %}
-                        {% if movie.genres %}
-                            <span>{{ movie.genres|length }} Genres</span>
-                        {% endif %}
+                        <div class="studio-chip">
+                            <span class="studio-chip__label">Studio</span>
+                            <span class="studio-chip__number">{{ '%02d'|format(movie.studio_number) }}</span>
+                            {% if movie.release_date %}
+                                <span class="studio-chip__release">{{ movie.release_date.strftime('%b %d, %Y') }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="meta-stack">
+                            <span>{{ daily_slots }} shows per day</span>
+                            {% if movie.genres %}
+                                <span>{{ movie.genres|length }} Genres</span>
+                            {% endif %}
+                        </div>
                     </div>
-                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 10px 0 0;">{{ movie.description }}</p>
+                    <p class="movie-description">{{ movie.description }}</p>
                 </div>
                 {% if movie.genres %}
                     <div class="genre-tags">
