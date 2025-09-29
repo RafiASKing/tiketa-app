@@ -7,8 +7,8 @@ This document captures the current architecture, data model, and user experience
 - **Framework**: Flask 3 with the application factory pattern and blueprint modularity
 - **Data Layer**: SQLAlchemy ORM targeting PostgreSQL in production with SQLite fallback for local runs
 - **Runtime Entry**: `run.py` bootstraps the factory-created app and honours `FLASK_DEBUG` / `PORT`
-- **Domain Scope**: The Time Gallery.   Bekasi with 21 permanent studios, each dedicated to a single film
-- **UI Stack**: Server-rendered Jinja templates styled with modern CSS, gradients, and responsive layout primitives
+- **Domain Scope**: A conceptual cinema experience, "The Time Gallery", where each studio is an eternal shrine to a single film, showing it continuously since its release.
+- **UI Stack**: Server-rendered Jinja templates with a sophisticated, dark-themed aesthetic featuring glassmorphism, multi-layered interactive hover effects, and a fully responsive layout.
 
 ## High-Level Topology
 
@@ -74,9 +74,9 @@ Booking posts validate both the patron name and seat selection, enforce seat uni
 
 Templates share the `base.html` shell that defines the glassmorphism aesthetic, header nav, and inline design tokens. Feature highlights:
 
-- **Index (`movies/index.html`)**: Hero copy, responsive movie cards, studio chips mirroring odd/even scheduling, consistent poster source via remote CDN.
+- **Index (`movies/index.html`)**: Features a strong hero section with brand messaging ("Now Showing, Forever") and poetic copy. The responsive movie cards utilize a complex, two-stage hover effect: the card darkens for focus, while the call-to-action button lifts and brightens, creating an interactive 3D effect.
 - **Detail (`movies/detail.html`)**: Large poster presentation, genre badges, dynamic slot count messaging (`5` vs `6` shows per day), and computed end-times using `timedelta`.
-- **Book (`movies/book.html`)**: Seat grid (A–E × 1–10) with colour-coded states, inline JavaScript for selection feedback, and alerting for already reserved seats.
+- **Book (`movies/book.html`)**: Renders a large, realistic, and asymmetrical cinema seating chart defined by a backend data structure. Uses CSS Grid to create vertical aisles and horizontal walkways. Seats have distinct, color-coded states (available, taken, selected) with interactive feedback and a prominent, wide "SCREEN" indicator.
 
 All templates rely on the central design palette declared in `base.html`, ensuring the UI shifts cohesively across viewport sizes.
 
@@ -104,5 +104,6 @@ Key environment variables consumed by `create_app()`:
 - Booking confirmation currently relies on flash messaging—consider adding inline toasts or email hooks for production.
 - Posters are served from external URLs; caching or local mirroring may be desirable for reliability.
 - For multi-day scheduling, extend the generator to add additional dates while preserving the odd/even cadence.
+- AI Agent Integration: Develop a conversational AI agent (using LangChain/LangGraph) to assist with movie discovery and booking, replacing or augmenting the traditional form-based interaction.
 
 This document should serve as the source of truth for new contributors ramping onto Tiketa and as a baseline for future architectural decisions.
