@@ -3,6 +3,13 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+movie_genres = db.Table(
+    'movie_genres',
+    db.Column('movie_id', db.Integer, db.ForeignKey('movies.id'), primary_key=True),
+    db.Column('genre_id', db.Integer, db.ForeignKey('genres.id'), primary_key=True)
+)
+
+
 class Movie(db.Model):
     __tablename__ = 'movies'
     
@@ -13,8 +20,6 @@ class Movie(db.Model):
     poster_path = db.Column(db.String(255), nullable=True)
     backdrop_path = db.Column(db.String(255), nullable=True)
     release_date = db.Column(db.Date, nullable=True)
-    genre_ids = db.Column(db.JSON, nullable=True)
-    genres = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship with showtimes
@@ -24,9 +29,33 @@ class Movie(db.Model):
         lazy=True,
         order_by='Showtime.time'
     )
+
+    genres = db.relationship(
+        'Genre',
+        secondary=movie_genres,
+        back_populates='movies',
+        lazy='joined'
+    )
     
     def __repr__(self):
         return f'<Movie {self.title}>'
+
+
+class Genre(db.Model):
+    __tablename__ = 'genres'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    movies = db.relationship(
+        'Movie',
+        secondary=movie_genres,
+        back_populates='genres'
+    )
+
+    def __repr__(self):
+        return f'<Genre {self.name}>'
 
 class Showtime(db.Model):
     __tablename__ = 'showtimes'

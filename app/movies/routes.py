@@ -1,4 +1,5 @@
-from datetime import timedelta
+from collections import defaultdict, OrderedDict
+from datetime import datetime, timedelta
 
 from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
@@ -15,8 +16,34 @@ def index():
 def movie_detail(movie_id):
     """Show movie details and showtimes"""
     movie = Movie.query.get_or_404(movie_id)
-    showtimes = Showtime.query.filter_by(movie_id=movie_id).order_by(Showtime.time).all()
-    return render_template('movies/detail.html', movie=movie, showtimes=showtimes, timedelta=timedelta)
+    now = datetime.now()
+    horizon = now + timedelta(days=3)
+
+    upcoming_showtimes = (
+        Showtime.query
+        .filter(
+            Showtime.movie_id == movie_id,
+            Showtime.time >= now,
+            Showtime.time < horizon
+        )
+        .order_by(Showtime.time)
+        .all()
+    )
+
+    grouped = defaultdict(list)
+    for showtime in upcoming_showtimes:
+        grouped[showtime.time.date()].append(showtime)
+
+    grouped_showtimes = OrderedDict(
+        sorted(grouped.items(), key=lambda item: item[0])
+    )
+
+    return render_template(
+        'movies/detail.html',
+        movie=movie,
+        grouped_showtimes=grouped_showtimes,
+        timedelta=timedelta
+    )
 
 @bp.route('/book/<int:showtime_id>', methods=['GET', 'POST'])
 def book_ticket(showtime_id):

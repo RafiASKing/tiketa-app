@@ -32,7 +32,7 @@ def create_app(config=None):
         db.create_all()
         
         # Initialize with sample data if no movies exist
-        from app.models import Movie, Showtime
+        from app.models import Movie, Showtime, Genre
         from app.sample_data.movies import SAMPLE_MOVIES
         from datetime import datetime, timedelta, time
         
@@ -53,9 +53,25 @@ def create_app(config=None):
 
             # Add sample movies with studio-specific schedules
             for movie_data in SAMPLE_MOVIES:
-                movie = Movie(**movie_data)
+                genre_names = movie_data.get("genres", [])
+                movie_payload = {
+                    key: value
+                    for key, value in movie_data.items()
+                    if key not in {"genres", "genre_ids"}
+                }
+
+                movie = Movie(**movie_payload)
                 db.session.add(movie)
                 db.session.flush()  # Make sure movie.id is available
+
+                for genre_name in genre_names:
+                    genre = Genre.query.filter_by(name=genre_name).first()
+                    if not genre:
+                        genre = Genre(name=genre_name)
+                        db.session.add(genre)
+                        db.session.flush()
+
+                    movie.genres.append(genre)
 
                 for start_time in generate_showtimes(movie.studio_number):
                     db.session.add(Showtime(movie_id=movie.id, time=start_time))

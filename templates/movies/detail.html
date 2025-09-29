@@ -70,6 +70,23 @@
         gap: 18px;
     }
 
+    .showtime-day {
+        display: grid;
+        gap: 14px;
+    }
+
+    .showtime-date {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    .showtime-day-list {
+        display: grid;
+        gap: 12px;
+    }
+
     .showtime-item {
         display: flex;
         justify-content: space-between;
@@ -79,6 +96,12 @@
         border-radius: 18px;
         border: 1px solid rgba(148, 163, 184, 0.22);
         background: rgba(15, 23, 42, 0.62);
+    }
+
+    .showtime-time {
+        font-weight: 600;
+        font-size: 1.1rem;
+        letter-spacing: 0.04em;
     }
 
     .showtime-meta {
@@ -130,7 +153,7 @@
         {% if movie.genres %}
             <div class="genre-tags">
                 {% for genre in movie.genres %}
-                    <span class="tag">{{ genre }}</span>
+                    <span class="tag">{{ genre.name }}</span>
                 {% endfor %}
             </div>
         {% endif %}
@@ -139,21 +162,26 @@
 
 <section class="card card-padding showtimes-card">
     <div class="section-title">Available Showtimes</div>
-    {% for showtime in showtimes %}
-        <div class="showtime-item">
-            <div>
-                <div style="font-weight: 600; font-size: 1.05rem;">
-                    {{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}
-                </div>
-                <div class="showtime-meta">
-                    Studio {{ '%02d'|format(movie.studio_number) }} · Duration 2h · Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}
+    {% if grouped_showtimes %}
+        {% for show_date, showtimes in grouped_showtimes.items() %}
+            <div class="showtime-day">
+                <h3 class="showtime-date">{{ show_date.strftime('%A, %d %B %Y') }}</h3>
+                <div class="showtime-day-list">
+                    {% for showtime in showtimes %}
+                        <div class="showtime-item">
+                            <div>
+                                <div class="showtime-time">{{ showtime.time.strftime('%H:%M') }}</div>
+                                <div class="showtime-meta">
+                                    Studio {{ '%02d'|format(movie.studio_number) }} · Duration 2h · Ends {{ (showtime.time + timedelta(hours=2)).strftime('%H:%M') }}
+                                </div>
+                            </div>
+                            <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn btn-primary">Booking sekarang</a>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
-            <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn btn-primary">Booking sekarang</a>
-        </div>
-    {% endfor %}
-
-    {% if not showtimes %}
+        {% endfor %}
+    {% else %}
         <p style="color: var(--text-secondary);">No showtimes available for this movie.</p>
     {% endif %}
 </section>
