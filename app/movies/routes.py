@@ -44,11 +44,11 @@ def book_ticket(showtime_id):
                 )
                 db.session.add(booking)
                 db.session.commit()
-                flash(f'Successfully booked seat {seat} for {user}!', 'success')
+                flash(f'Berhasil booking seat {seat} untuk {user}!', 'success')
                 return redirect(url_for('movies.book_ticket', showtime_id=showtime_id))
         else:
-            flash('Please provide both user name and seat number.', 'error')
-    
+            flash('Silakan provide nama pemesan dan no seat.', 'error')
+
     # Gather booking details for the seating chart
     bookings = (
         Booking.query

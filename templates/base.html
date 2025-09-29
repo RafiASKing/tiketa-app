@@ -46,22 +46,21 @@
         .app-header {
             width: min(1100px, calc(100% - 48px));
             margin: 32px auto 0;
-            padding: 22px 28px;
+            padding: 20px 26px;
             background: var(--surface);
             backdrop-filter: blur(26px);
             border: 1px solid var(--border);
             border-radius: 24px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 16px;
+            justify-content: center;
             box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
         }
 
         .app-brand {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .brand-icon {
@@ -77,21 +76,9 @@
 
         .brand-text h1 {
             margin: 0;
-            font-size: 1.7rem;
+            font-size: 1.55rem;
             font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .brand-text p {
-            margin: 4px 0 0;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
+            letter-spacing: 0.02em;
         }
 
         .app-main {
@@ -265,12 +252,8 @@
             <div class="brand-icon">🎟️</div>
             <div class="brand-text">
                 <h1>Tiketa</h1>
-                <p>The Time Gallery.   Bekasi • Booking cepat</p>
             </div>
         </div>
-        <nav class="nav-actions">
-            <a href="{{ url_for('movies.index') }}" class="btn btn-ghost">Penayangan</a>
-        </nav>
     </header>
 
     <main class="app-main">
