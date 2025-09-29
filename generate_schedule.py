@@ -43,10 +43,7 @@ def _generate_slots(studio_number: int) -> tuple[int, int]:
 
 
 def generate_upcoming_showtimes(days: int = 3) -> int:
-    """Ensure each movie has scheduled showtimes for the next ``days`` days.
-
-    Returns the number of new showtimes inserted.
-    """
+    """Ensure each movie has scheduled showtimes for the next ``days`` days."""
     today = datetime.now().date()
     window = [today + timedelta(days=i) for i in range(days)]
     new_records = 0
@@ -55,19 +52,27 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
         slots, interval_hours = _generate_slots(movie.studio_number)
 
         for show_date in window:
-            start_time = datetime.combine(show_date, time(hour=START_HOUR))
+            
+            # --- PERUBAHAN KUNCI DIMULAI DI SINI ---
+            # Cek apakah sudah ada jadwal APAPUN untuk film ini di tanggal ini
+            day_start = datetime.combine(show_date, time.min)
+            day_end = datetime.combine(show_date, time.max)
+            
+            has_schedule_for_day = Showtime.query.filter(
+                Showtime.movie_id == movie.id,
+                Showtime.time.between(day_start, day_end)
+            ).first()
 
+            if has_schedule_for_day:
+                # Jika sudah ada, lewati seluruh hari ini untuk film ini dan lanjut ke hari berikutnya
+                continue 
+            # --- PERUBAHAN KUNCI SELESAI ---
+
+            # Jika belum ada jadwal sama sekali untuk hari ini, baru kita buat
+            start_time = datetime.combine(show_date, time(hour=START_HOUR))
             for slot_index in range(slots):
                 show_time = start_time + timedelta(hours=interval_hours * slot_index)
-
-                exists = Showtime.query.filter_by(
-                    movie_id=movie.id,
-                    time=show_time
-                ).first()
-
-                if exists:
-                    continue
-
+                
                 db.session.add(Showtime(movie_id=movie.id, time=show_time))
                 new_records += 1
 
