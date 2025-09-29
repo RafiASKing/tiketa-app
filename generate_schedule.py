@@ -17,22 +17,22 @@ ODD_SLOTS = 5
 
 
 def purge_past_showtimes(cutoff: datetime | None = None) -> int:
-    """Delete showtimes that end before the start of ``cutoff`` (default: today).
+    """Archive showtimes that start before ``cutoff`` (default: start of today).
 
-    Returns the number of records removed.
+    Returns the number of records updated.
     """
     if cutoff is None:
-        cutoff = datetime.combine(datetime.now().date(), time())
+        cutoff = datetime.combine(datetime.now().date(), time.min)
 
-    deleted = (
+    updated = (
         Showtime.query
-        .filter(Showtime.time < cutoff)
-        .delete(synchronize_session=False)
+        .filter(Showtime.time < cutoff, Showtime.is_archived.is_(False))
+        .update({Showtime.is_archived: True}, synchronize_session=False)
     )
 
-    if deleted:
+    if updated:
         db.session.commit()
-    return deleted or 0
+    return updated or 0
 
 
 def _generate_slots(studio_number: int) -> tuple[int, int]:
@@ -60,7 +60,8 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
             
             has_schedule_for_day = Showtime.query.filter(
                 Showtime.movie_id == movie.id,
-                Showtime.time.between(day_start, day_end)
+                Showtime.time.between(day_start, day_end),
+                Showtime.is_archived.is_(False)
             ).first()
 
             if has_schedule_for_day:
@@ -73,7 +74,7 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
             for slot_index in range(slots):
                 show_time = start_time + timedelta(hours=interval_hours * slot_index)
                 
-                db.session.add(Showtime(movie_id=movie.id, time=show_time))
+                db.session.add(Showtime(movie_id=movie.id, time=show_time, is_archived=False))
                 new_records += 1
 
     if new_records:

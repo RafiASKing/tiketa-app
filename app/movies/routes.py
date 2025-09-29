@@ -25,7 +25,8 @@ def movie_detail(movie_id):
         .filter(
             Showtime.movie_id == movie_id,
             Showtime.time >= now,
-            Showtime.time <= horizon
+            Showtime.time <= horizon,
+            Showtime.is_archived.is_(False)
         )
         .order_by(Showtime.time)
         .all()

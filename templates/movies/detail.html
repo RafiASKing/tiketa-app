@@ -65,6 +65,25 @@
         align-items: center;
     }
 
+    .trailer-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+    .trailer-actions .btn {
+        padding: 20px 28px;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .trailer-actions .btn .fa-play {
+        font-size: 1.5rem;
+    }
+    .trailer-actions .btn i {
+        margin-right: 8px;
+    }
+
     .showtimes-card {
         display: grid;
         gap: 18px;
@@ -107,6 +126,74 @@
     .showtime-meta {
         color: rgba(226, 232, 240, 0.7);
         font-size: 0.95rem;
+    }
+
+    .trailer-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        background: rgba(5, 8, 21, 0.86);
+        backdrop-filter: blur(12px);
+        z-index: 1400;
+    }
+
+    .trailer-modal.is-visible {
+        display: flex;
+    }
+
+    .trailer-modal__dialog {
+        position: relative;
+        width: min(90vw, 760px);
+        background: rgba(15, 23, 42, 0.94);
+        border-radius: 22px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        box-shadow: 0 40px 90px rgba(5, 8, 21, 0.6);
+        overflow: hidden;
+    }
+
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%;
+        background: #000;
+    }
+
+    .video-container iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+    }
+
+    .trailer-modal__close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(15, 23, 42, 0.78);
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .trailer-modal__close:hover {
+        transform: scale(1.05);
+        background: rgba(124, 58, 237, 0.28);
+    }
+
+    body.modal-open {
+        overflow: hidden;
     }
 
     .back-link {
@@ -157,6 +244,14 @@
                 {% endfor %}
             </div>
         {% endif %}
+        {% if movie.trailer_youtube_id %}
+            <div class="trailer-actions">
+                <button type="button" class="btn btn-secondary" data-trailer-open>
+                    <i class="fa-solid fa-play" aria-hidden="true"></i>
+                    <span>Lihat Trailer</span>
+                </button>
+            </div>
+        {% endif %}
     </div>
 </section>
 
@@ -185,4 +280,68 @@
         <p style="color: var(--text-secondary);">No showtimes available for this movie.</p>
     {% endif %}
 </section>
+
+{% if movie.trailer_youtube_id %}
+<div class="trailer-modal" data-trailer-modal aria-hidden="true">
+    <div class="trailer-modal__dialog" role="dialog" aria-modal="true" aria-label="Trailer">
+        <button type="button" class="trailer-modal__close" data-trailer-close aria-label="Tutup trailer">×</button>
+        <div class="video-container">
+            <iframe
+                data-trailer-src="https://www.youtube.com/embed/{{ movie.trailer_youtube_id }}?autoplay=1&rel=0"
+                title="Trailer {{ movie.title }}"
+                allow="autoplay; encrypted-media"
+                allowfullscreen
+            ></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.querySelector('[data-trailer-modal]');
+        const trigger = document.querySelector('[data-trailer-open]');
+
+        if (!modal || !trigger) {
+            return;
+        }
+
+        const iframe = modal.querySelector('iframe');
+        const closeButtons = modal.querySelectorAll('[data-trailer-close]');
+        const videoSrc = iframe ? iframe.dataset.trailerSrc : null;
+
+        const openModal = () => {
+            modal.classList.add('is-visible');
+            modal.setAttribute('aria-hidden', 'false');
+            if (iframe && videoSrc) {
+                iframe.src = videoSrc;
+            }
+            document.body.classList.add('modal-open');
+        };
+
+        const closeModal = () => {
+            modal.classList.remove('is-visible');
+            modal.setAttribute('aria-hidden', 'true');
+            if (iframe) {
+                iframe.src = '';
+            }
+            document.body.classList.remove('modal-open');
+        };
+
+        trigger.addEventListener('click', openModal);
+        closeButtons.forEach(button => button.addEventListener('click', closeModal));
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('is-visible')) {
+                closeModal();
+            }
+        });
+    });
+</script>
+{% endif %}
 {% endblock %}

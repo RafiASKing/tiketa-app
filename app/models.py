@@ -20,6 +20,7 @@ class Movie(db.Model):
     poster_path = db.Column(db.String(255), nullable=True)
     backdrop_path = db.Column(db.String(255), nullable=True)
     release_date = db.Column(db.Date, nullable=True)
+    trailer_youtube_id = db.Column(db.String(20), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship with showtimes
@@ -63,6 +64,7 @@ class Showtime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
     time = db.Column(db.DateTime, nullable=False)
+    is_archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship with bookings
