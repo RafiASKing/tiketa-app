@@ -266,7 +266,7 @@
                 {% if movie.genres %}
                     <div class="genre-tags">
                         {% for genre in movie.genres %}
-                            <span class="tag">{{ genre }}</span>
+                            <span class="tag">{{ genre.name }}</span>
                         {% endfor %}
                     </div>
                 {% endif %}

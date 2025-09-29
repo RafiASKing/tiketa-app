@@ -1,5 +1,5 @@
 from collections import defaultdict, OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, date, time, timedelta
 
 from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
@@ -17,14 +17,15 @@ def movie_detail(movie_id):
     """Show movie details and showtimes"""
     movie = Movie.query.get_or_404(movie_id)
     now = datetime.now()
-    horizon = now + timedelta(days=3)
+    end_date = date.today() + timedelta(days=2)
+    horizon = datetime.combine(end_date, time.max)
 
     upcoming_showtimes = (
         Showtime.query
         .filter(
             Showtime.movie_id == movie_id,
             Showtime.time >= now,
-            Showtime.time < horizon
+            Showtime.time <= horizon
         )
         .order_by(Showtime.time)
         .all()
