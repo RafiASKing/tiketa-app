@@ -274,7 +274,7 @@
                 <p>{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}<br>
                     Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}</p>
                 {% if showtime.movie.genres %}
-                    <p>{{ showtime.movie.genres | join(' · ') }}</p>
+                    <p>{{ showtime.movie.genres | map(attribute='name') | join(' · ') }}</p>
                 {% endif %}
             </div>
         </div>
