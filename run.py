@@ -16,6 +16,15 @@ def reset_db_command():
         db.create_all()
     print("Database berhasil di-reset.")
 
+# --- TAMBAHKAN PERINTAH BARU DI SINI ---
+@app.cli.command("seed-db")
+def seed_db_command():
+    """Memasukkan data awal ke dalam database."""
+    from app import seed_initial_data
+    with app.app_context():
+        seed_initial_data()
+# --- AKHIR PERINTAH BARU ---
+
 if __name__ == '__main__':
     # Use environment variables for configuration in production
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
