@@ -7,6 +7,15 @@ from app import create_app
 
 app = create_app()
 
+@app.cli.command("reset-db")
+def reset_db_command():
+    """Menghapus dan membuat ulang semua tabel database."""
+    from app.models import db
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+    print("Database berhasil di-reset.")
+
 if __name__ == '__main__':
     # Use environment variables for configuration in production
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
