@@ -46,13 +46,17 @@ def seed_initial_data():
         jakarta_tz = pytz.timezone('Asia/Jakarta')
         now = datetime.now(jakarta_tz)
 
-        candidate_naive = datetime.combine(now.date(), time(hour=6))
-        candidate = jakarta_tz.localize(candidate_naive)
+        candidate = datetime.combine(now.date(), time(hour=6))
+        candidate = jakarta_tz.localize(candidate)
 
         if candidate <= now:
-            candidate_naive = datetime.combine(now.date() + timedelta(days=1), time(hour=6))
-            candidate = jakarta_tz.localize(candidate_naive)
-        return candidate
+            candidate = jakarta_tz.localize(
+                datetime.combine(now.date() + timedelta(days=1), time(hour=6))
+            )
+
+        # Store showtimes as naive datetimes in Jakarta local time so they
+        # remain consistent across environments (SQLite, PostgreSQL, etc.).
+        return candidate.replace(tzinfo=None)
 
     def generate_showtimes(studio_number: int) -> list[datetime]:
         start = first_show_datetime()
