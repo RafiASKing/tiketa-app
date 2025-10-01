@@ -271,8 +271,8 @@
             <div class="movie-info-meta">
                 <h2>{{ showtime.movie.title }}</h2>
                 <p>Studio <strong>{{ '%02d'|format(showtime.movie.studio_number) }}</strong></p>
-                <p>{{ showtime.time.strftime('%A, %B %d, %Y at %I:%M %p') }}<br>
-                    Ends {{ (showtime.time + timedelta(hours=2)).strftime('%I:%M %p') }}</p>
+                <p>{{ showtime.local_start.strftime('%A, %B %d, %Y at %I:%M %p') }}<br>
+                    Ends {{ showtime.local_end.strftime('%I:%M %p') }}</p>
                 {% if showtime.movie.genres %}
                     <p>{{ showtime.movie.genres | map(attribute='name') | join(' · ') }}</p>
                 {% endif %}

@@ -1,11 +1,22 @@
 from collections import defaultdict, OrderedDict
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, time, timedelta
 
 from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
 from app.models import db, Movie, Showtime, Booking
 from app.layouts import SEAT_MAP
 import pytz
+
+JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
+UTC = pytz.UTC
+
+
+def _utc_naive(dt: datetime) -> datetime:
+    return dt.astimezone(UTC).replace(tzinfo=None)
+
+
+def _to_local(dt_utc_naive: datetime) -> datetime:
+    return UTC.localize(dt_utc_naive).astimezone(JAKARTA_TZ)
 
 @bp.route('/')
 def index():
@@ -18,22 +29,19 @@ def movie_detail(movie_id):
     """Show movie details and showtimes"""
     movie = Movie.query.get_or_404(movie_id)
 
-    # Definisikan zona waktu WIB
-    wib = pytz.timezone('Asia/Jakarta')
-    
-    # Dapatkan waktu saat ini yang sudah sadar zona waktu (timezone-aware)
-    now_wib = datetime.now(wib)
-    
-    # Tentukan batas akhir pencarian (akhir dari 2 hari ke depan)
-    end_date = now_wib.date() + timedelta(days=2)
-    horizon = datetime.combine(end_date, time.max, tzinfo=wib)
+    now_local = datetime.now(JAKARTA_TZ)
+    horizon_local = datetime.combine(now_local.date() + timedelta(days=2), time.max)
+    horizon_local = JAKARTA_TZ.localize(horizon_local)
+
+    start_utc = _utc_naive(now_local)
+    end_utc = _utc_naive(horizon_local)
 
     upcoming_showtimes = (
         Showtime.query
         .filter(
             Showtime.movie_id == movie_id,
-            Showtime.time >= now_wib,
-            Showtime.time <= horizon,
+            Showtime.time >= start_utc,
+            Showtime.time <= end_utc,
             Showtime.is_archived.is_(False)
         )
         .order_by(Showtime.time)
@@ -42,7 +50,10 @@ def movie_detail(movie_id):
 
     grouped = defaultdict(list)
     for showtime in upcoming_showtimes:
-        grouped[showtime.time.date()].append(showtime)
+        local_start = _to_local(showtime.time)
+        showtime.local_start = local_start
+        showtime.local_end = local_start + timedelta(hours=2)
+        grouped[local_start.date()].append(showtime)
 
     grouped_showtimes = OrderedDict(
         sorted(grouped.items(), key=lambda item: item[0])
@@ -59,6 +70,9 @@ def movie_detail(movie_id):
 def book_ticket(showtime_id):
     """Book a ticket for a showtime"""
     showtime = Showtime.query.get_or_404(showtime_id)
+    local_start = _to_local(showtime.time)
+    showtime.local_start = local_start
+    showtime.local_end = local_start + timedelta(hours=2)
     
     if request.method == 'POST':
         user = request.form.get('user')

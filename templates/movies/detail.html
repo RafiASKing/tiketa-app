@@ -265,9 +265,9 @@
                     {% for showtime in showtimes %}
                         <div class="showtime-item">
                             <div>
-                                <div class="showtime-time">{{ showtime.time.strftime('%H:%M') }}</div>
+                                <div class="showtime-time">{{ showtime.local_start.strftime('%H:%M') }}</div>
                                 <div class="showtime-meta">
-                                    Studio {{ '%02d'|format(movie.studio_number) }} · Duration 2h · Ends {{ (showtime.time + timedelta(hours=2)).strftime('%H:%M') }}
+                                    Studio {{ '%02d'|format(movie.studio_number) }} · Duration 2h · Ends {{ showtime.local_end.strftime('%H:%M') }}
                                 </div>
                             </div>
                             <a href="{{ url_for('movies.book_ticket', showtime_id=showtime.id) }}" class="btn btn-primary">Booking sekarang</a>

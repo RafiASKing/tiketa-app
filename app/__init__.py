@@ -42,8 +42,9 @@ def seed_initial_data():
             db.session.add(Genre(id=genre_id, name=genre_name))
     db.session.flush()
 
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+
     def first_show_datetime() -> datetime:
-        jakarta_tz = pytz.timezone('Asia/Jakarta')
         now = datetime.now(jakarta_tz)
 
         candidate = datetime.combine(now.date(), time(hour=6))
@@ -54,8 +55,7 @@ def seed_initial_data():
                 datetime.combine(now.date() + timedelta(days=1), time(hour=6))
             )
 
-        # Store showtimes as naive datetimes in Jakarta local time so they
-        # remain consistent across environments (SQLite, PostgreSQL, etc.).
+        # Return naive Jakarta-local datetime for downstream calculations.
         return candidate.replace(tzinfo=None)
 
     def generate_showtimes(studio_number: int) -> list[datetime]:
@@ -63,6 +63,11 @@ def seed_initial_data():
         slots = 6 if studio_number % 2 == 0 else 5
         interval_hours = 3 if studio_number % 2 == 0 else 4
         return [start + timedelta(hours=interval_hours * i) for i in range(slots)]
+
+    def to_utc_naive(local_dt: datetime) -> datetime:
+        """Convert a Jakarta-local naive datetime to naive UTC for storage."""
+        local_aware = jakarta_tz.localize(local_dt)
+        return local_aware.astimezone(pytz.UTC).replace(tzinfo=None)
 
     for movie_data in SAMPLE_MOVIES:
         genre_ids = movie_data.get("genre_ids", [])
@@ -80,8 +85,9 @@ def seed_initial_data():
             genres = Genre.query.filter(Genre.id.in_(genre_ids)).all()
             movie.genres.extend(genres)
 
-        for start_time in generate_showtimes(movie.studio_number):
-            db.session.add(Showtime(movie_id=movie.id, time=start_time))
+        for start_time_local in generate_showtimes(movie.studio_number):
+            show_time_utc = to_utc_naive(start_time_local)
+            db.session.add(Showtime(movie_id=movie.id, time=show_time_utc))
 
     db.session.commit()
     print("Seeding complete.")
