@@ -1,247 +1,302 @@
-# Tiketa System Blueprint
+# Tiketa System Blueprint (2025 Edition)
 
-Tiketa is a cinematic time-capsule: every studio inside “The Time Gallery” screens exactly one film, forever, preserving a curated canon of masterpieces. The platform lets visitors browse studios, explore a film’s lore, watch its trailer, and reserve a seat in that film’s eternal run. This document explains **what the product stands for** and **how the software realizes it**, giving a new engineer everything needed to rebuild the system from scratch.
+Tiketa imagines **The Time Gallery**, a cinema complex where every studio is devoted to a single iconic film looping forever. Visitors browse the catalog, inspect lore-rich detail pages, watch trailers, and reserve specific seats for a chosen showtime. This document is the authoritative reference for how the platform works architecturally, functionally, and operationally. A reader should be able to reproduce the system end-to-end using the information below.
 
 ---
 
-## 🎯 Product Concept — What & Why
+## 🎬 Product Snapshot
 
-| Aspect | Details |
+| Dimension | Details |
 | --- | --- |
-| **Audience** | Film enthusiasts visiting a fictional premium cinema that celebrates iconic titles. |
-| **Promise** | Each studio is dedicated to a single movie; screenings follow a predictable rhythm so fans can plan pilgrimages. |
-| **Problems Solved** | Curated discovery (no content overload), tangible scheduling (every studio runs on rails), and effortless booking with visual seat selection. |
-| **Experience Pillars** | Story-rich copy (“Now Showing, Forever”), high-gloss UI, responsive layouts, and immersive booking UX. |
+| **Audience** | Film aficionados and demo-goers exploring a premium curated cinema. |
+| **Value Props** | Curated catalog (21 masterpieces), predictable show rhythms, interactive seat booking, plush futuristic UI crafted with bespoke CSS. |
+| **Primary Flows** | Browse studios → inspect film detail + trailer → choose showtime → reserve a seat. |
+| **Tone** | Narrative-rich Indonesian/English mix, “Now Showing, Forever” motif, neon-dark aesthetic. |
 
 ---
 
-## 🧰 Technology Stack — How It’s Built
+## 🧰 Technology Stack
 
-| Layer | Technology | Purpose |
+| Layer | Technology | Notes |
 | --- | --- | --- |
-| Language | Python 3.13 | Primary runtime for backend and scripts. |
-| Web Framework | Flask 3.0 | App factory pattern with modular blueprints. |
-| ORM | Flask-SQLAlchemy 3.1 over SQLAlchemy 2.0 | Entity modelling, relationship management, DB access. |
-| Database | PostgreSQL (prod), SQLite (default dev) | Persistent storage for movies, showtimes, bookings, genres. |
-| Config | python-dotenv 1.0 | Loads environment variables from `.env`. |
-| Frontend | Jinja templates, semantic HTML5, bespoke CSS, Font Awesome icons | Server-rendered UI with dark neon aesthetic. |
-| Scripting | `generate_schedule.py` | Maintains rolling showtime windows by archiving past slots and creating new ones. |
-
-Dependencies are pinned in `requirements.txt`, ensuring reproducible environments.
+| Runtime | Python 3.13 | Verified via committed virtualenv and tooling. |
+| Framework | Flask 3.0.0 | App factory + blueprints, CLI command surface. |
+| ORM | Flask-SQLAlchemy 3.1.1 on SQLAlchemy 2.0.43 | Declarative models, explicit association table. |
+| Database | SQLite (`DATABASE_URL` default) or PostgreSQL (prod) | Run-time switch by environment variable. |
+| Config & Secrets | `python-dotenv` 1.0 | Loads `.env` automatically during import. |
+| Timezone Support | `pytz` 2025.2 | Used during seeding to anchor Asia/Jakarta showtimes. |
+| Frontend | Jinja2 templates, custom CSS, Font Awesome, minimal vanilla JS | Single layout file + feature-specific pages. |
+| Job Scripts | `generate_schedule.py`, `reset.py`, Flask CLI commands | Handle maintenance and data loading. |
+| Dependencies | `requirements.txt` pinned versions | Recreate identical environment reliably. |
 
 ---
 
-## 🏗️ System Architecture — How Everything Fits
+## 🏛️ Architecture Overview
 
 ```mermaid
-flowchart LR
-     UserBrowser[(Browser)] -- HTTP --> Flask
-     Flask -- imports --> AppFactory
-     AppFactory -- configures --> Extensions[(SQLAlchemy, dotenv)]
-     AppFactory -- registers --> MoviesBlueprint
-     MoviesBlueprint -- renders --> Templates
-     Templates -- read/write --> Database[(Movies, Genres, Showtimes, Bookings)]
-     ScheduleScript{{generate_schedule.py}} -- app context --> Database
+flowchart TD
+	Browser[(User Browser)] -- HTTP --> FlaskApp
+	subgraph Application
+		FlaskApp[/run.py\ncreate_app()/]
+		AppFactory[/app/__init__.py/]
+		MoviesBP[/app/movies/routes.py/]
+		Templates[/templates/*.html/]
+		Models[/app/models.py/]
+		SeatMap[/app/layouts.py/]
+	end
+	subgraph Database
+		Movies[(movies)]
+		Genres[(genres)]
+		Showtimes[(showtimes)]
+		Bookings[(bookings)]
+		movie_genres[(movie_genres)]
+	end
+	subgraph Maintenance
+		ScheduleScript{{generate_schedule.py}}
+		ResetScript{{reset.py}}
+		SeedCLI{{flask seed-db}}
+	end
+
+	FlaskApp --> AppFactory
+	AppFactory --> Models
+	AppFactory --> MoviesBP
+	MoviesBP --> Templates
+	Templates --> Browser
+	Models <--> Database
+	SeatMap --> Templates
+	ScheduleScript --> Database
+	ResetScript --> Database
+	SeedCLI --> Database
 ```
 
-1. **Entry point**: `run.py` instantiates the Flask app via `create_app()` and honours `FLASK_DEBUG` and `PORT` toggles.
-2. **App factory** (`app/__init__.py`):
-    - Loads `.env`, configures secrets and database URI.
-    - Boots SQLAlchemy, registers the `movies` blueprint.
-    - On a pristine database, seeds 21 movies along with their genres and initial showtimes.
-3. **Request flow**:
-    - Routes in `app/movies/routes.py` handle listing, details, and booking.
-    - Templates in `templates/` render responses and embed lightweight JavaScript for trailer modals and seat selection.
-4. **Background maintenance**:
-    - `generate_schedule.py` can be run manually or scheduled (cron/Task Scheduler). It archives past showtimes via a soft-delete flag and ensures 3 days of future screenings.
+**Execution lifecycle**
 
-The application is intentionally stateless; all persistent state lives in the database. Session data uses Flask’s secure cookies.
+1. `run.py` imports `create_app()` and starts Flask using `FLASK_DEBUG` and `PORT` toggles.
+2. `create_app()` configures secrets and database URI, initializes SQLAlchemy, registers the movies blueprint, and ensures tables exist (`db.create_all()`).
+3. Seeding is opt-in via CLI: `flask seed-db` runs `seed_initial_data()` to load curated movies and day-one showtimes.
+4. Routes render Jinja templates that drive all UX. JavaScript is limited to trailer modals and seat picker helpers.
+5. Maintenance scripts (`reset.py`, `generate_schedule.py`) operate inside an app context to manage data lifecycle.
 
 ---
 
-## 🗂️ Repository Map — Where Things Live
+## 📦 Repository Map
 
 ```
 tiketa-app/
-├── run.py                   # WSGI entry point
-├── generate_schedule.py     # Rolling schedule maintenance script
-├── requirements.txt         # Locked Python dependencies
+├── run.py                  # WSGI/CLI entry point (app + Flask commands)
+├── generate_schedule.py    # Rolling showtime maintenance script
+├── reset.py                # Helper to drop & recreate schema
+├── requirements.txt        # Locked dependency versions
 ├── app/
-│   ├── __init__.py          # Flask app factory, config, first-run seeding
-│   ├── models.py            # SQLAlchemy models + association tables
-│   ├── layouts.py           # Canonical cinema seat map definition
+│   ├── __init__.py         # App factory + seed_initial_data()
+│   ├── models.py           # SQLAlchemy models & association table
+│   ├── layouts.py          # Auditorium seat layout grid
 │   ├── movies/
-│   │   ├── __init__.py      # Blueprint registration
-│   │   └── routes.py        # All HTTP endpoints & booking logic
+│   │   ├── __init__.py     # Blueprint factory
+│   │   └── routes.py       # Browse, detail, booking endpoints
 │   └── sample_data/
-│       └── movies.py        # Curated film metadata and trailer IDs
+│       └── movies.py       # 21 curated movie definitions
 ├── templates/
-│   ├── base.html            # Global HTML shell, styles, fonts, tokens
+│   ├── base.html           # Global shell & design tokens
 │   └── movies/
-│       ├── index.html       # Studio catalog landing page
-│       ├── detail.html      # Film detail, schedule, trailer modal
-│       └── book.html        # Interactive seat reservation flow
+│       ├── index.html      # Catalog landing page
+│       ├── detail.html     # Film detail + trailer modal
+│       └── book.html       # Seat selection + booking form
 ├── docs/
-│   └── system-overview.md   # This document
-└── venvtiketa/              # (Optional) Pre-created virtual environment
+│   └── system-overview.md  # This document
+└── venvtiketa/             # (Optional) committed virtualenv snapshot
 ```
 
-Each folder is intentionally small: one blueprint, one seat-map helper, and a sample dataset the seeding routine can trust.
+---
+
+## 🧱 Data Model
+
+| Table | Purpose | Key Columns | Notable Constraints |
+| --- | --- | --- | --- |
+| `movies` | Master catalog, one per studio | `studio_number` (unique), `title`, `release_date`, artwork URLs, `trailer_youtube_id` | `studio_number` unique, genres via association table, `showtimes` relationship ordered by time. |
+| `genres` | Canonical genre list | `name` | `name` unique; bidirectional many-to-many with movies. |
+| `movie_genres` | Join table | `movie_id`, `genre_id` | Composite primary key ensures uniqueness. |
+| `showtimes` | Individual screening slots | `movie_id`, `time`, `is_archived` | Soft delete via `is_archived`; `bookings` backref. |
+| `bookings` | Seat reservations | `user`, `seat`, `showtime_id` | Unique constraint `uq_booking_showtime_seat` prevents double-booking same seat + showtime. |
+
+All timestamps default to `datetime.utcnow()` when not supplied. Timezone-aware datetimes from `seed_initial_data()` (Asia/Jakarta) are stored directly; SQLAlchemy retains them (SQLite stores as ISO strings, PostgreSQL as `TIMESTAMP WITH TIME ZONE`).
 
 ---
 
-## 🧱 Core Components — Critical Building Blocks
+## 🎟️ Seat Layout
 
-### App Factory & Configuration (`app/__init__.py`)
-- Loads environment variables using `python-dotenv`.
-- Defines `create_app(config=None)` to support tests or alternate configs.
-- Configures `SECRET_KEY`, `SQLALCHEMY_DATABASE_URI`, and disables modification tracking for performance.
-- Initializes SQLAlchemy and registers the `movies` blueprint.
-- **First-run seeding**: if the `movies` table is empty, it iterates through `SAMPLE_MOVIES`, ensures matching `Genre` objects exist, and creates schedule slots based on studio parity.
+`app/layouts.py` exports `SEAT_MAP`, a two-dimensional grid consumed by templates:
 
-### Data Model (`app/models.py`)
-- `Movie`: unique `studio_number`, poster/backdrop paths, `trailer_youtube_id`, and `release_date`. Many-to-many `genres` through `movie_genres` association table. Has ordered `showtimes` relationship.
-- `Genre`: canonical genre names, linked back to movies.
-- `Showtime`: `time` stamp, foreign key to movie, `is_archived` soft-delete flag, and `created_at`. Relationship to `Booking` objects.
-- `Booking`: captures `user`, `seat`, `showtime_id` with a unique constraint to prevent double-booking.
+* Rows **A–J**: full-width with 18 seats each and an aisle between columns 9 and 10.
+* Row **K**: walkway (entire row of `None`) rendered as a divider.
+* Rows **L–M**: narrower tail rows.
+* `None` entries mark aisles or walkways; templates render them as non-interactive gaps.
 
-These models are small but expressive enough to describe the cinema, its schedule, and reservations.
-
-### Seat Layout Helper (`app/layouts.py`)
-- Exposes `SEAT_MAP`, an asymmetric auditorium grid using `None` sentinels for aisles and walkways.
-- Keeps view logic clean by supplying a consistent structure the template can traverse.
-
-### Movies Blueprint (`app/movies/routes.py`)
-- `/`: Lists every movie ordered by studio, injecting metadata for the landing page cards.
-- `/movie/<movie_id>`: Fetches one movie, gathers upcoming showtimes (next three days) excluding archived slots, groups them by date, and passes a `timedelta` helper for end-time calculations. Also exposes trailer IDs to the template.
-- `/book/<showtime_id>`: On GET, renders the seating chart with current bookings; on POST, validates form inputs, enforces seat uniqueness, flashes status messages, and redirects back to reflect the new seat state.
-
-### Template Layer (`templates/`)
-- `base.html` embeds global CSS tokens, Google Fonts, Font Awesome icons, and the app chrome. Blocks `extra_head` and `scripts` give individual pages room to extend styles/behaviour.
-- `movies/index.html` implements the brand story, feature grid, and responsive cards.
-- `movies/detail.html` presents cinematic hero content, core metadata, computed schedule messaging, and a modal trailer player that auto-starts/stops the YouTube iframe.
-- `movies/book.html` renders the seat grid with stateful buttons and lightweight JavaScript helpers (`selectSeat`, `showTaken`).
-
-### Scheduling Script (`generate_schedule.py`)
-- Invokes the app factory standalone, then calls:
-  - `purge_past_showtimes()` to mark passed showtimes as archived.
-  - `generate_upcoming_showtimes()` to populate gaps for the next three days without duplicating existing live schedules.
-- Intended for periodic execution (cron, GitHub Actions, Windows Task Scheduler) to keep the timetable rolling forward.
+Templates rely on the grid to determine CSS layout and apply seat state (available, selected, taken). Seat IDs are persisted verbatim in bookings.
 
 ---
 
-## 🔄 Data Flow Explained
+## 🌐 Request & UX Flows
 
-### 1. Browsing Studios
-1. User hits `/`.
-2. `routes.index()` queries all `Movie` rows ordered by `studio_number`.
-3. Template renders cards with poster art, genre tags, and computed daily slot counts (6 for even studios, 5 for odd).
+### 1. Browse Catalog (`/`)
+1. `routes.index()` fetches all movies ordered by studio.
+2. Template shows hero copy, responsive cards, poster art, studio chip, genre tags, and implicit daily slot count (`6` for even studios, `5` for odd).
+3. CTAs route to the detail page for deeper exploration.
 
-### 2. Exploring a Film
-1. User selects a movie, requesting `/movie/<id>`.
-2. Route fetches the `Movie`, calculates a 3-day horizon, and pulls non-archived `Showtime` entries within that window.
-3. Showtimes are grouped by date and rendered with computed end-times. The trailer button opens a modal which injects the YouTube embed URL on demand and clears it on close.
+### 2. Inspect a Film (`/movie/<movie_id>`)
+1. Loads the target movie or 404s if missing.
+2. Defines a three-day horizon: now → (today + 2 days, 23:59).
+3. Queries non-archived showtimes in that window, groups them by date, and sorts chronologically.
+4. Template renders cinematic hero layout, metadata, and trailer button. Trailer modal is hydrated client-side: open attaches the YouTube embed, closing wipes `src` to stop playback.
 
-### 3. Booking Seats
-1. User navigates to `/book/<showtime_id>`.
-2. GET route loads the seat map, pre-tags taken seats by comparing `Booking` records.
-3. Client-side JS visually marks availability and writes the chosen seat into a hidden field.
-4. On form submit, POST validates `user` and `seat`, checks for existing bookings, and either flashes an error or persists the reservation.
-5. The user is redirected back; GET re-renders with the seat now flagged as taken.
+### 3. Reserve a Seat (`/book/<showtime_id>`, GET/POST)
+1. GET: builds seat grid and marks taken seats using existing `Booking` rows for the showtime.
+2. Client selects a seat; lightweight JS toggles CSS classes and writes to a hidden input.
+3. POST: validates `user` and `seat`, checks for duplicates, creates a `Booking`, commits, and flashes a localized success message. Duplicate seats flash an error.
+4. Redirect back to GET to reflect updated seat occupancy.
 
-### 4. Maintaining Schedules
-1. Operator runs `python generate_schedule.py`.
-2. Past showtimes flip `is_archived=True` to preserve history without deleting rows.
-3. For each movie and each day in the rolling window, the script only creates new rows when that day has no active showtimes, preventing duplicates.
-
-These flows share a single source of truth (the database) and lean on server rendering for simplicity and reliability.
+Flash messaging leverages Flask’s category mechanism. Templates localize certain strings to Bahasa Indonesia to fit the brand voice.
 
 ---
 
-## ⚙️ Configuration & Environment Variables
+## 🧩 Templates & Frontend Behaviour
 
-| Variable | Purpose | Default |
+* `base.html` supplies fonts, color tokens, buttons, and shared layout. Footer renders static copy for 2025.
+* `movies/index.html` emphasises marketing copy, handles studio parity messaging, and ensures cards remain responsive.
+* `movies/detail.html` hosts the trailer modal logic, showtime list, and computed end-time (assumed 2h duration using `timedelta(hours=2)`).
+* `movies/book.html` renders the seat picker, seat legend, and submission form. JS functions `selectSeat()` and `showTaken()` manage interactivity.
+
+No build tooling is required; the frontend is server-rendered with inline CSS/JS designed for a small-scale demo.
+
+---
+
+## 🛠️ Maintenance Scripts & CLI
+
+### Seeding (`seed_initial_data()`)
+* Lives in `app/__init__.py`.
+* Checks if `Movie.query.count() == 0` before inserting.
+* Pulls 21 curated records from `app/sample_data/movies.py`.
+* For each movie: creates `Movie`, attaches/creates `Genre` rows, generates daily showtimes using timezone-aware `Asia/Jakarta` datetimes.
+* Slots follow parity rules (even studio → 6 slots every 3 hours starting 06:00; odd studio → 5 slots every 4 hours).
+* Invocation is manual via CLI to avoid unintended duplicate data.
+
+### Flask CLI Commands (`run.py`)
+* `flask reset-db` — Drop and recreate all tables (no seeding).
+* `flask seed-db` — Run `seed_initial_data()`; safe to call repeatedly (no-op if movies already present).
+
+### `reset.py`
+Standalone helper mirroring `flask reset-db`. Useful when Flask CLI is not configured; simply runs `db.drop_all()` followed by `db.create_all()`.
+
+### `generate_schedule.py`
+* Purges past showtimes by setting `is_archived=True` for slots starting before today (`time.min`).
+* For the next `days` (default 3), checks **per movie + day** if any live showtime exists. If none, it creates a fresh batch using parity rules and a starting time of 07:00 local.
+* Returns counts of purged and created records; prints summary when run standalone.
+* Intended for cron/Task Scheduler to keep the schedule rolling without restarting the web server.
+
+> ⚠️ Because showtimes created during seeding use Asia/Jakarta timezone-aware datetimes, ensure the database engine handles timezone consistently. SQLite stores them as strings; PostgreSQL will normalise to UTC while preserving offsets.
+
+---
+
+## ⚙️ Configuration & Environment
+
+| Variable | Default | Description |
 | --- | --- | --- |
-| `SECRET_KEY` | Secures Flask sessions and CSRF tokens. | `dev-secret-key-change-in-production` |
-| `DATABASE_URL` | SQLAlchemy connection string (PostgreSQL recommended). | `sqlite:///tiketa.db` |
-| `FLASK_DEBUG` | Enables live reload and verbose errors when `true`. | `False` |
-| `PORT` | Overrides default port used by `run.py`. | `5000` |
+| `SECRET_KEY` | `dev-secret-key-change-in-production` | Flask session + CSRF signing key. Override in production. |
+| `DATABASE_URL` | `sqlite:///tiketa.db` | SQLAlchemy connection string; supports PostgreSQL, SQLite, etc. |
+| `FLASK_DEBUG` | `False` | Enables debug server when set to `true`. |
+| `PORT` | `5000` | Port used by `python run.py`. |
 
-Optional: standard PostgreSQL URI syntax (`postgresql://user:pass@host:port/dbname`). Place overrides in a `.env` file at the project root; `python-dotenv` loads it automatically.
+Configuration is loaded via `python-dotenv`; place overrides in a `.env` file at the project root.
 
 ---
 
-## 🛠️ Local Setup & Operations
-
-Follow these steps on a fresh machine (PowerShell shown; translate to Bash as needed):
+## 🧪 Local Development Playbook (PowerShell)
 
 ```powershell
 # 1. Clone and enter the project
 git clone <repository-url>
 cd tiketa-app
 
-# 2. (Optional) remove the committed virtual environment and create your own
+# 2. (Optional) remove the committed virtualenv and create a fresh one
 Remove-Item -Recurse -Force venvtiketa -ErrorAction SilentlyContinue
-python -m venv venv
+python -m venv .venv
 
 # 3. Activate the environment
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 
-# 4. Install backend dependencies
+# 4. Install dependencies
 pip install -r requirements.txt
 
-# 5. Create or update your .env file
-New-Item -Path .env -ItemType File -Force
-notepad .env  # populate with the values shown below
+# 5. Configure environment
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+# or create manually:
+# Set-Content .env @'
+# SECRET_KEY=dev-secret-key-change-in-production
+# DATABASE_URL=sqlite:///tiketa.db
+# FLASK_DEBUG=true
+# PORT=5000
+# '@
 
-# 6. Launch the development server (auto-seeds on first run)
+# 6. Create schema
+flask --app run.py reset-db
+
+# 7. Seed curated catalog (idempotent)
+flask --app run.py seed-db
+
+# 8. Launch the server
 python run.py
-```
 
-Recommended `.env` skeleton:
-
-```dotenv
-SECRET_KEY=dev-secret-key-change-in-production
-DATABASE_URL=sqlite:///tiketa.db
-FLASK_DEBUG=true
-PORT=5000
-```
-
-`python run.py` creates `tiketa.db` (when using SQLite) and seeds the cinema catalog automatically. Visit `http://localhost:5000` to browse studios, explore trailers, and book seats.
-
-To regenerate schedules or roll the window forward without restarting the web server, run:
-
-```powershell
+# Optional: refresh rolling showtimes
 python generate_schedule.py
 ```
 
-### Common Operations
-
-- **Reset the database**: Stop the server, delete `tiketa.db` (SQLite) or drop all tables in PostgreSQL, then rerun `python run.py` to trigger reseeding.
-- **Inspect data interactively**: Start a REPL with `python`, then:
-  ```python
-  from app import create_app
-  from app.models import db, Movie, Showtime, Booking
-  app = create_app()
-  with app.app_context():
-      print(Movie.query.count())
-  ```
-- **Clear stale bookings**: Inside an app context, call `Booking.query.delete()` followed by `db.session.commit()` to wipe all reservations (useful for demos).
-- **Update the curated catalog**: Edit `app/sample_data/movies.py`, remove existing movies, and rerun the seeding workflow.
+Visit `http://localhost:5000` to browse the cinema. The first server launch will use the seeded data; subsequent launches read persisted records from `tiketa.db` (or the configured database).
 
 ---
 
-## ♻️ Extensibility & Next Steps
+## 🗃️ Sample Data Reference
 
-- Add user authentication and a personal ticket wallet for repeat visitors.
-- Integrate payment processing and QR-code ticketing for real deployments.
-- Expose a JSON/GraphQL API so kiosks or mobile apps can share the same backend.
-- Automate `generate_schedule.py` via cron/Task Scheduler or convert it into a Flask CLI command.
-- Introduce automated tests (unit + integration) covering booking collisions, schedule generation, and template rendering.
+* File: `app/sample_data/movies.py`
+* Contains 21 entries with studio numbers 1–21, each with description, release date, poster/backdrop URLs, YouTube trailer IDs, and genre list.
+* Genres align with the curated set defined during seeding; duplicates are deduplicated at insert time.
+* Update this file to modify the canon, then re-run `flask seed-db` after resetting the database.
 
 ---
 
-## ✅ Final Notes
+## 🔄 Operational Guidelines
 
-Tiketa’s codebase is intentionally compact: a single blueprint, explicit data models, and richly crafted templates. With this document and the source tree side by side, a new developer can stand up the experience in minutes, extend it confidently, and keep “The Time Gallery” open for the next century of cinema.
+| Scenario | Action |
+| --- | --- |
+| **Reset database** | `flask --app run.py reset-db` or `python reset.py` |
+| **Reseed curated data** | `flask --app run.py seed-db` |
+| **Roll schedule forward** | `python generate_schedule.py` (can be scheduled) |
+| **Inspect data manually** | Launch Python shell → `from app import create_app; from app.models import db, Movie; app = create_app(); app.app_context().push(); Movie.query.count()` |
+| **Switch to PostgreSQL** | Update `.env` `DATABASE_URL=postgresql://user:pass@host:port/db`; rerun reset + seed commands. |
+
+---
+
+## 🚧 Limitations & Considerations
+
+* No authentication, payments, or inventory caps beyond seat uniqueness.
+* Show durations are hard-coded to 2 hours and not stored in the database.
+* Timezone handling mixes aware (seeding) and naive (runtime queries). When running outside Asia/Jakarta, ensure server timezone assumptions are documented.
+* There are no automated tests; manual validation is required after changes.
+* Frontend assets are inline; large-scale theming would benefit from CSS modularisation.
+
+---
+
+## 📈 Extensibility Ideas
+
+1. Add user accounts and history of bookings per user.
+2. Attach film runtime to `Movie` and compute end-times accurately.
+3. Convert `generate_schedule.py` into a Flask CLI command and parameterise horizon length.
+4. Introduce REST/GraphQL APIs for kiosk or mobile integrations.
+5. Implement automated tests for booking collisions, schedule generation, and template rendering.
+6. Externalise seat maps per studio in the database to support varied auditorium layouts.
+
+---
+
+## ✅ Summary
+
+Tiketa is a self-contained Flask application showcasing a cinematic booking flow with handcrafted UI, deterministic showtime logic, and clear operational scripts. This blueprint documents every component—from data schema and request handling to maintenance utilities—so engineers and AI agents alike can rebuild, extend, or deploy the system with confidence.
 
