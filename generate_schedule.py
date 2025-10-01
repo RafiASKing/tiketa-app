@@ -1,39 +1,35 @@
-#!/usr/bin/env python3
+#!/usr/-bin/env python3
 """Utility script to maintain a rolling three-day schedule of showtimes."""
 
 from __future__ import annotations
-
 from datetime import datetime, timedelta, time
+import pytz
 
 from app import create_app
 from app.models import db, Movie, Showtime
 
+# --- PERUBAHAN: Jadikan semua sadar zona waktu ---
+JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
+START_HOUR = 6  # Jam 6 pagi WIB
 
-START_HOUR = 7  # 07:00 local time for the first show
 EVEN_INTERVAL_HOURS = 3
 ODD_INTERVAL_HOURS = 4
 EVEN_SLOTS = 6
 ODD_SLOTS = 5
 
-
-def purge_past_showtimes(cutoff: datetime | None = None) -> int:
-    """Archive showtimes that start before ``cutoff`` (default: start of today).
-
-    Returns the number of records updated.
-    """
-    if cutoff is None:
-        cutoff = datetime.combine(datetime.now().date(), time.min)
-
-    updated = (
-        Showtime.query
-        .filter(Showtime.time < cutoff, Showtime.is_archived.is_(False))
-        .update({Showtime.is_archived: True}, synchronize_session=False)
-    )
-
-    if updated:
+def purge_past_showtimes() -> int:
+    """Archive showtimes that have already passed based on the current time."""
+    now_wib = datetime.now(JAKARTA_TZ)
+    
+    # Hanya arsipkan yang sudah lewat dari jam sekarang
+    updated_count = Showtime.query.filter(
+        Showtime.time < now_wib, 
+        Showtime.is_archived.is_(False)
+    ).update({Showtime.is_archived: True}, synchronize_session=False)
+    
+    if updated_count:
         db.session.commit()
-    return updated or 0
-
+    return updated_count or 0
 
 def _generate_slots(studio_number: int) -> tuple[int, int]:
     is_even = studio_number % 2 == 0
@@ -41,40 +37,35 @@ def _generate_slots(studio_number: int) -> tuple[int, int]:
     interval = EVEN_INTERVAL_HOURS if is_even else ODD_INTERVAL_HOURS
     return slots, interval
 
-
 def generate_upcoming_showtimes(days: int = 3) -> int:
-    """Ensure each movie has scheduled showtimes for the next ``days`` days."""
-    today = datetime.now().date()
-    window = [today + timedelta(days=i) for i in range(days)]
+    """Ensure each movie has scheduled showtimes for the next `days` days."""
+    now_wib = datetime.now(JAKARTA_TZ)
     new_records = 0
 
-    for movie in Movie.query.order_by(Movie.studio_number):
-        slots, interval_hours = _generate_slots(movie.studio_number)
+    for i in range(days):
+        target_date = (now_wib + timedelta(days=i)).date()
+        
+        # Cek apakah sudah ada jadwal APAPUN untuk tanggal target ini
+        day_start = datetime.combine(target_date, time.min, tzinfo=JAKARTA_TZ)
+        day_end = datetime.combine(target_date, time.max, tzinfo=JAKARTA_TZ)
 
-        for show_date in window:
+        has_any_schedule = Showtime.query.filter(
+            Showtime.time.between(day_start, day_end)
+        ).first()
+
+        # Jika sudah ada jadwal, lewati hari ini dan lanjut ke hari berikutnya
+        if has_any_schedule:
+            continue
+
+        # Jika belum ada, buat jadwal untuk semua film di tanggal target
+        print(f"Generating schedule for {target_date.strftime('%Y-%m-%d')}...")
+        for movie in Movie.query.order_by(Movie.studio_number):
+            slots, interval_hours = _generate_slots(movie.studio_number)
+            start_time = datetime.combine(target_date, time(hour=START_HOUR), tzinfo=JAKARTA_TZ)
             
-            # --- PERUBAHAN KUNCI DIMULAI DI SINI ---
-            # Cek apakah sudah ada jadwal APAPUN untuk film ini di tanggal ini
-            day_start = datetime.combine(show_date, time.min)
-            day_end = datetime.combine(show_date, time.max)
-            
-            has_schedule_for_day = Showtime.query.filter(
-                Showtime.movie_id == movie.id,
-                Showtime.time.between(day_start, day_end),
-                Showtime.is_archived.is_(False)
-            ).first()
-
-            if has_schedule_for_day:
-                # Jika sudah ada, lewati seluruh hari ini untuk film ini dan lanjut ke hari berikutnya
-                continue 
-            # --- PERUBAHAN KUNCI SELESAI ---
-
-            # Jika belum ada jadwal sama sekali untuk hari ini, baru kita buat
-            start_time = datetime.combine(show_date, time(hour=START_HOUR))
             for slot_index in range(slots):
                 show_time = start_time + timedelta(hours=interval_hours * slot_index)
-                
-                db.session.add(Showtime(movie_id=movie.id, time=show_time, is_archived=False))
+                db.session.add(Showtime(movie_id=movie.id, time=show_time))
                 new_records += 1
 
     if new_records:
@@ -86,9 +77,13 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
 def main() -> None:
     app = create_app()
     with app.app_context():
-        purged = purge_past_showtimes()
+        # Hapus yang sudah lewat dulu
+        purged = purge_past_showtimes() 
+        print(f"Archived {purged} past showtimes.")
+        
+        # Buat jadwal baru untuk hari yang kosong
         created = generate_upcoming_showtimes()
-        print(f"Purged {purged} past showtimes, created {created} upcoming showtimes.")
+        print(f"Created {created} new upcoming showtimes.")
 
 
 if __name__ == "__main__":
