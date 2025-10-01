@@ -24,7 +24,7 @@ Tiketa imagines **The Time Gallery**, a cinema complex where every studio is dev
 | ORM | Flask-SQLAlchemy 3.1.1 on SQLAlchemy 2.0.43 | Declarative models, explicit association table. |
 | Database | SQLite (`DATABASE_URL` default) or PostgreSQL (prod) | Run-time switch by environment variable. |
 | Config & Secrets | `python-dotenv` 1.0 | Loads `.env` automatically during import. |
-| Timezone Support | `pytz` 2025.2 | Used during seeding to anchor Asia/Jakarta showtimes. |
+| Timezone Support | `pytz` 2025.2 | Bridges Asia/Jakarta-facing UX with UTC-backed persistence. |
 | Frontend | Jinja2 templates, custom CSS, Font Awesome, minimal vanilla JS | Single layout file + feature-specific pages. |
 | Job Scripts | `generate_schedule.py`, `reset.py`, Flask CLI commands | Handle maintenance and data loading. |
 | Dependencies | `requirements.txt` pinned versions | Recreate identical environment reliably. |
@@ -119,7 +119,7 @@ tiketa-app/
 | `showtimes` | Individual screening slots | `movie_id`, `time`, `is_archived` | Soft delete via `is_archived`; `bookings` backref. |
 | `bookings` | Seat reservations | `user`, `seat`, `showtime_id` | Unique constraint `uq_booking_showtime_seat` prevents double-booking same seat + showtime. |
 
-All timestamps default to `datetime.utcnow()` when not supplied. Timezone-aware datetimes from `seed_initial_data()` (Asia/Jakarta) are stored directly; SQLAlchemy retains them (SQLite stores as ISO strings, PostgreSQL as `TIMESTAMP WITH TIME ZONE`).
+All timestamps default to `datetime.utcnow()` when not supplied. Showtimes are persisted as **naive UTC** datetimes; seeding and maintenance scripts convert Jakarta-local slots into UTC before insert, while routes/templates reconvert to Asia/Jakarta for display.
 
 ---
 
@@ -146,11 +146,11 @@ Templates rely on the grid to determine CSS layout and apply seat state (availab
 ### 2. Inspect a Film (`/movie/<movie_id>`)
 1. Loads the target movie or 404s if missing.
 2. Defines a three-day horizon: now → (today + 2 days, 23:59).
-3. Queries non-archived showtimes in that window, groups them by date, and sorts chronologically.
-4. Template renders cinematic hero layout, metadata, and trailer button. Trailer modal is hydrated client-side: open attaches the YouTube embed, closing wipes `src` to stop playback.
+3. Queries non-archived showtimes in that window (using UTC bounds), converts each to Jakarta local time, assigns `local_start`/`local_end`, groups by date, and sorts chronologically.
+4. Template renders cinematic hero layout, metadata, and trailer button, and surfaces localized start/end times. Trailer modal is hydrated client-side: open attaches the YouTube embed, closing wipes `src` to stop playback.
 
 ### 3. Reserve a Seat (`/book/<showtime_id>`, GET/POST)
-1. GET: builds seat grid and marks taken seats using existing `Booking` rows for the showtime.
+1. GET: builds seat grid and marks taken seats using existing `Booking` rows for the showtime. Each showtime is localized (`local_start`/`local_end`) before rendering.
 2. Client selects a seat; lightweight JS toggles CSS classes and writes to a hidden input.
 3. POST: validates `user` and `seat`, checks for duplicates, creates a `Booking`, commits, and flashes a localized success message. Duplicate seats flash an error.
 4. Redirect back to GET to reflect updated seat occupancy.
@@ -163,8 +163,8 @@ Flash messaging leverages Flask’s category mechanism. Templates localize certa
 
 * `base.html` supplies fonts, color tokens, buttons, and shared layout. Footer renders static copy for 2025.
 * `movies/index.html` emphasises marketing copy, handles studio parity messaging, and ensures cards remain responsive.
-* `movies/detail.html` hosts the trailer modal logic, showtime list, and computed end-time (assumed 2h duration using `timedelta(hours=2)`).
-* `movies/book.html` renders the seat picker, seat legend, and submission form. JS functions `selectSeat()` and `showTaken()` manage interactivity.
+* `movies/detail.html` hosts the trailer modal logic, showtime list, and renders localized start/end times (assumed 2h duration using `timedelta(hours=2)`).
+* `movies/book.html` renders the seat picker, seat legend, submission form, and surfaces the localized showtime window. JS functions `selectSeat()` and `showTaken()` manage interactivity.
 
 No build tooling is required; the frontend is server-rendered with inline CSS/JS designed for a small-scale demo.
 
@@ -188,12 +188,12 @@ No build tooling is required; the frontend is server-rendered with inline CSS/JS
 Standalone helper mirroring `flask reset-db`. Useful when Flask CLI is not configured; simply runs `db.drop_all()` followed by `db.create_all()`.
 
 ### `generate_schedule.py`
-* Purges past showtimes by setting `is_archived=True` for slots starting before today (`time.min`).
-* For the next `days` (default 3), checks **per movie + day** if any live showtime exists. If none, it creates a fresh batch using parity rules and a starting time of 07:00 local.
+* Purges past showtimes by setting `is_archived=True` for slots whose UTC start time has elapsed.
+* For the next `days` (default 3), checks **per movie + day** if any live showtime exists. If none, it creates a fresh batch using parity rules and a starting time of 06:00 Asia/Jakarta.
 * Returns counts of purged and created records; prints summary when run standalone.
 * Intended for cron/Task Scheduler to keep the schedule rolling without restarting the web server.
 
-> ⚠️ Because showtimes created during seeding use Asia/Jakarta timezone-aware datetimes, ensure the database engine handles timezone consistently. SQLite stores them as strings; PostgreSQL will normalise to UTC while preserving offsets.
+> ⚠️ All showtimes are stored as naive UTC datetimes. Always convert incoming Asia/Jakarta times with the helper utilities before persisting, and localize retrieved values prior to user display to avoid off-by-one-day errors.
 
 ---
 
@@ -279,7 +279,7 @@ Visit `http://localhost:5000` to browse the cinema. The first server launch will
 
 * No authentication, payments, or inventory caps beyond seat uniqueness.
 * Show durations are hard-coded to 2 hours and not stored in the database.
-* Timezone handling mixes aware (seeding) and naive (runtime queries). When running outside Asia/Jakarta, ensure server timezone assumptions are documented.
+* Timezone handling assumes storage in UTC and presentation in Asia/Jakarta. If you introduce new scheduling code, reuse the provided conversion helpers to stay consistent.
 * There are no automated tests; manual validation is required after changes.
 * Frontend assets are inline; large-scale theming would benefit from CSS modularisation.
 
