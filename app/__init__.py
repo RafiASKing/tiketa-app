@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+import pytz
 
 # Load environment variables
 load_dotenv()
@@ -17,10 +18,17 @@ def seed_initial_data():
         print("Database is empty, seeding initial data...")
         
         def first_show_datetime() -> datetime:
-            now = datetime.now()
-            candidate = datetime.combine(now.date(), time(hour=6))
+            jakarta_tz = pytz.timezone('Asia/Jakarta') # <-- Definisikan timezone
+            now = datetime.now(jakarta_tz) # <-- Gunakan timezone saat ini
+            
+            # Buat waktu kandidat (masih 'naive'/tanpa timezone)
+            candidate_naive = datetime.combine(now.date(), time(hour=6))
+            # Jadikan 'aware'/sadar timezone
+            candidate = jakarta_tz.localize(candidate_naive)
+            
             if candidate <= now:
-                candidate = datetime.combine(now.date() + timedelta(days=1), time(hour=6))
+                candidate_naive = datetime.combine(now.date() + timedelta(days=1), time(hour=6))
+                candidate = jakarta_tz.localize(candidate_naive) # <-- Jadikan aware juga
             return candidate
 
         def generate_showtimes(studio_number: int) -> list[datetime]:
