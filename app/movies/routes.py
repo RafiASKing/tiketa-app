@@ -5,6 +5,7 @@ from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
 from app.models import db, Movie, Showtime, Booking
 from app.layouts import SEAT_MAP
+import pytz
 
 @bp.route('/')
 def index():
@@ -16,15 +17,22 @@ def index():
 def movie_detail(movie_id):
     """Show movie details and showtimes"""
     movie = Movie.query.get_or_404(movie_id)
-    now = datetime.now()
-    end_date = date.today() + timedelta(days=2)
-    horizon = datetime.combine(end_date, time.max)
+
+    # Definisikan zona waktu WIB
+    wib = pytz.timezone('Asia/Jakarta')
+    
+    # Dapatkan waktu saat ini yang sudah sadar zona waktu (timezone-aware)
+    now_wib = datetime.now(wib)
+    
+    # Tentukan batas akhir pencarian (akhir dari 2 hari ke depan)
+    end_date = now_wib.date() + timedelta(days=2)
+    horizon = datetime.combine(end_date, time.max, tzinfo=wib)
 
     upcoming_showtimes = (
         Showtime.query
         .filter(
             Showtime.movie_id == movie_id,
-            Showtime.time >= now,
+            Showtime.time >= now_wib,
             Showtime.time <= horizon,
             Showtime.is_archived.is_(False)
         )
