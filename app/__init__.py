@@ -65,7 +65,7 @@ def seed_initial_data():
         movie_payload = {
             key: value
             for key, value in movie_data.items()
-            if key != "genre_ids"
+            if key not in {"genre_ids", "genres"}
         }
 
         movie = Movie(**movie_payload)
