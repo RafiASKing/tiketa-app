@@ -1,4 +1,4 @@
-#!/usr/-bin/env python3
+#!/usr/bin/env python3
 """Utility script to maintain a rolling three-day schedule of showtimes."""
 
 from __future__ import annotations
@@ -45,23 +45,20 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
     for i in range(days):
         target_date = (now_wib + timedelta(days=i)).date()
         
-        # Cek apakah sudah ada jadwal APAPUN untuk tanggal target ini
-        day_start = datetime.combine(target_date, time.min, tzinfo=JAKARTA_TZ)
-        day_end = datetime.combine(target_date, time.max, tzinfo=JAKARTA_TZ)
+        day_start = JAKARTA_TZ.localize(datetime.combine(target_date, time.min))
+        day_end = JAKARTA_TZ.localize(datetime.combine(target_date, time.max))
 
         has_any_schedule = Showtime.query.filter(
             Showtime.time.between(day_start, day_end)
         ).first()
 
-        # Jika sudah ada jadwal, lewati hari ini dan lanjut ke hari berikutnya
         if has_any_schedule:
             continue
 
-        # Jika belum ada, buat jadwal untuk semua film di tanggal target
         print(f"Generating schedule for {target_date.strftime('%Y-%m-%d')}...")
         for movie in Movie.query.order_by(Movie.studio_number):
             slots, interval_hours = _generate_slots(movie.studio_number)
-            start_time = datetime.combine(target_date, time(hour=START_HOUR), tzinfo=JAKARTA_TZ)
+            start_time = JAKARTA_TZ.localize(datetime.combine(target_date, time(hour=START_HOUR)))
             
             for slot_index in range(slots):
                 show_time = start_time + timedelta(hours=interval_hours * slot_index)
@@ -73,18 +70,14 @@ def generate_upcoming_showtimes(days: int = 3) -> int:
 
     return new_records
 
-
 def main() -> None:
     app = create_app()
     with app.app_context():
-        # Hapus yang sudah lewat dulu
         purged = purge_past_showtimes() 
         print(f"Archived {purged} past showtimes.")
         
-        # Buat jadwal baru untuk hari yang kosong
         created = generate_upcoming_showtimes()
         print(f"Created {created} new upcoming showtimes.")
-
 
 if __name__ == "__main__":
     main()
