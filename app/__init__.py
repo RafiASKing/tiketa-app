@@ -10,39 +10,16 @@ load_dotenv()
 # --- MULAI BAGIAN BARU ---
 def seed_initial_data():
     """Seeds the database with initial movies and genres if it's empty."""
-    from app.models import db, Movie, Showtime, Genre
+    from app.models import db, Movie, Genre
     from app.sample_data.movies import SAMPLE_MOVIES
-    from datetime import datetime, timedelta, time
 
     if Movie.query.count() == 0:
-        print("Database is empty, seeding initial data...")
+        print("Database is empty, seeding movies and genres...")
         
-        def first_show_datetime() -> datetime:
-            jakarta_tz = pytz.timezone('Asia/Jakarta') # <-- Definisikan timezone
-            now = datetime.now(jakarta_tz) # <-- Gunakan timezone saat ini
-            
-            # Buat waktu kandidat (masih 'naive'/tanpa timezone)
-            candidate_naive = datetime.combine(now.date(), time(hour=6))
-            # Jadikan 'aware'/sadar timezone
-            candidate = jakarta_tz.localize(candidate_naive)
-            
-            if candidate <= now:
-                candidate_naive = datetime.combine(now.date() + timedelta(days=1), time(hour=6))
-                candidate = jakarta_tz.localize(candidate_naive) # <-- Jadikan aware juga
-            return candidate
-
-        def generate_showtimes(studio_number: int) -> list[datetime]:
-            start = first_show_datetime()
-            slots = 6 if studio_number % 2 == 0 else 5
-            interval_hours = 3 if studio_number % 2 == 0 else 4
-            return [start + timedelta(hours=interval_hours * i) for i in range(slots)]
-
         for movie_data in SAMPLE_MOVIES:
             genre_names = movie_data.get("genres", [])
             movie_payload = {
-                key: value
-                for key, value in movie_data.items()
-                if key not in {"genres", "genre_ids"}
+                key: value for key, value in movie_data.items() if key != "genres"
             }
 
             movie = Movie(**movie_payload)
@@ -54,17 +31,12 @@ def seed_initial_data():
                 if not genre:
                     genre = Genre(name=genre_name)
                     db.session.add(genre)
-                    db.session.flush()
                 movie.genres.append(genre)
 
-            for start_time in generate_showtimes(movie.studio_number):
-                db.session.add(Showtime(movie_id=movie.id, time=start_time))
-
         db.session.commit()
-        print("Seeding complete.")
+        print("Movie and genre seeding complete.")
     else:
-        print("Database already contains data. Seeding skipped.")
-# --- AKHIR BAGIAN BARU ---
+        print("Database already contains movies. Seeding skipped.")
 
 
 def create_app(config=None):

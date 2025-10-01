@@ -33,7 +33,8 @@ def full_reset_command():
         print("-> Mengisi data film & genre awal...")
         seed_initial_data()
         print("-> Membuat jadwal baru untuk 3 hari ke depan...")
-        generate_upcoming_showtimes()
+        # Panggil fungsi dari skrip yang sudah benar
+        generate_upcoming_showtimes() 
         print("\n✅ Reset total dan seeding berhasil diselesaikan.")
     else:
         print("Dibatalkan.")
