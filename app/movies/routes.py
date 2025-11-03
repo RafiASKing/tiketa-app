@@ -5,6 +5,7 @@ from flask import render_template, request, flash, redirect, url_for
 from app.movies import bp
 from app.models import db, Movie, Showtime, Booking
 from app.layouts import SEAT_MAP
+from sqlalchemy.exc import IntegrityError
 import pytz
 
 JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
@@ -77,26 +78,30 @@ def book_ticket(showtime_id):
     if request.method == 'POST':
         user = request.form.get('user')
         seat = request.form.get('seat')
-        
+
         if user and seat:
-            # Check if seat is already booked
-            existing_booking = Booking.query.filter_by(
-                showtime_id=showtime_id, 
-                seat=seat
-            ).first()
-            
-            if existing_booking:
-                flash(f'Seat {seat} is already booked!', 'error')
-            else:
-                booking = Booking(
-                    user=user,
-                    seat=seat,
-                    showtime_id=showtime_id
-                )
-                db.session.add(booking)
+            booking = Booking(
+                user=user,
+                seat=seat,
+                showtime_id=showtime_id
+            )
+            db.session.add(booking)
+
+            try:
                 db.session.commit()
                 flash(f'Berhasil booking seat {seat} untuk {user}!', 'success')
                 return redirect(url_for('movies.book_ticket', showtime_id=showtime_id))
+
+            except IntegrityError:
+                db.session.rollback()
+                flash(
+                    f'Maaf, kursi {seat} baru saja diambil orang lain. Silakan pilih lagi.',
+                    'error'
+                )
+
+            except Exception as exc:
+                db.session.rollback()
+                flash(f'Terjadi error tidak terduga: {exc}', 'error')
         else:
             flash('Silakan provide nama pemesan dan no seat.', 'error')
 
